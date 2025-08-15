@@ -60,23 +60,22 @@ export async function sharePost(arg: Post | ShareOptions | string): Promise<bool
   }
 
   // Legacy execCommand fallback
-  if (typeof document !== "undefined") {
-    const ta = document.createElement("textarea");
-    try {
-      ta.value = url;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      return true;
-    } catch {
-      return false;
-    } finally {
-      document.body.removeChild(ta);
-    }
+  if (typeof document === "undefined") return false;
+
+  const ta = document.createElement("textarea");
+  try {
+    ta.value = url;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(ta);
   }
-  return false;
 }
 
 export default sharePost;
