@@ -121,7 +121,12 @@ export default function InfiniteFeed({
                 className="pc-act"
                 data-drop="share"
                 title="Share"
-                onClick={() => sharePost(img.link || window.location.href, img.author)}
+                onClick={() =>
+                  sharePost(
+                    img.link || (typeof window !== "undefined" ? window.location.href : ""),
+                    img.author
+                  )
+                }
               >
                 <span className="ico share" /><span>Share</span>
               </button>
