@@ -86,7 +86,21 @@ export default function InfiniteFeed({
                 const el = e.currentTarget;
                 // upgrade if we were still on thumb
                 if (el.dataset.src && el.src.indexOf("picsum.photos/id") > -1 && el.src.includes("/200/")) {
-                  // keep it as-is; IO below will upgrade when visible
+                  const swap = () => {
+                    el.src = el.dataset.src as string;
+                    delete el.dataset.src;
+                  };
+                  if ("IntersectionObserver" in window) {
+                    const io = new IntersectionObserver((entries, obs) => {
+                      if (entries[0].isIntersecting) {
+                        swap();
+                        obs.disconnect();
+                      }
+                    });
+                    io.observe(el);
+                  } else {
+                    swap();
+                  }
                 }
               }}
             />
