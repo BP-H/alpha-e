@@ -66,90 +66,93 @@ export default function Sidebar() {
 
   return (
     <>
-      {open && <div className="sb-scrim" onClick={() => setOpen(false)} aria-label="Close sidebar" />}
-      <aside className={`sb ${open ? "open" : ""}`}>
-        {open && (
-          <div className="sb-panel" role="dialog" aria-modal="true">
-            {/* Header */}
-            <div className="sb-head">
-              <button className="sb-x" onClick={() => setOpen(false)} aria-label="Close">✕</button>
-              <div className="sb-brand">
-                <span className="sb-orb" />
-                <span className="sb-logo">superNova</span>
+      <div
+        className={`sb-scrim ${open ? "open" : ""}`}
+        onClick={() => setOpen(false)}
+        aria-label="Close sidebar"
+        aria-hidden={!open}
+      />
+      <aside className={`sb ${open ? "open" : ""}`} aria-hidden={!open}>
+        <div className="sb-panel" role="dialog" aria-modal={open ? "true" : undefined}>
+          {/* Header */}
+          <div className="sb-head">
+            <button className="sb-x" onClick={() => setOpen(false)} aria-label="Close">✕</button>
+            <div className="sb-brand">
+              <span className="sb-orb" />
+              <span className="sb-logo">superNova</span>
+            </div>
+          </div>
+
+          <nav className="sb-nav" aria-label="Main">
+            <ul>
+              {pages.map(p => (
+                <li key={p.path}>
+                  <NavLink to={p.path} end>
+                    <span aria-hidden>{p.icon}</span>
+                    <span>{p.label}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Profile card */}
+          <section className="card profile">
+            {/* ... profile avatar, name, handle inputs ... */}
+          </section>
+
+          {/* Appearance settings */}
+          <section className="card">
+            <header>Appearance</header>
+            <div className="grid two">
+              <div>
+                <label className="label">Theme</label>
+                <select className="input" value={theme} onChange={e => setTheme(e.target.value as any)}>
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">Accent</label>
+                <div className="swatches">
+                  {["#7c83ff","#ff74de","#00ffa2","#9efcff","#ffd166"].map(c => (
+                    <button
+                      key={c}
+                      className={`sw ${c===accent ? "on" : ""}`}
+                      style={{ background: c }}
+                      onClick={() => setAccent(c)}
+                      aria-label={c}
+                    />
+                  ))}
+                  <input className="input" value={accent} onChange={e => setAccent(e.target.value)} />
+                </div>
               </div>
             </div>
 
-            <nav className="sb-nav" aria-label="Main">
-              <ul>
-                {pages.map(p => (
-                  <li key={p.path}>
-                    <NavLink to={p.path} end>
-                      <span aria-hidden>{p.icon}</span>
-                      <span>{p.label}</span>
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            {/* Profile card */}
-            <section className="card profile">
-              {/* ... profile avatar, name, handle inputs ... */}
-            </section>
-
-            {/* Appearance settings */}
-            <section className="card">
-              <header>Appearance</header>
-              <div className="grid two">
-                <div>
-                  <label className="label">Theme</label>
-                  <select className="input" value={theme} onChange={e => setTheme(e.target.value as any)}>
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Accent</label>
-                  <div className="swatches">
-                    {["#7c83ff","#ff74de","#00ffa2","#9efcff","#ffd166"].map(c =>
-                      <button 
-                        key={c} 
-                        className={`sw ${c===accent ? "on" : ""}`} 
-                        style={{ background: c }} 
-                        onClick={() => setAccent(c)} 
-                        aria-label={c} 
-                      />
-                    )}
-                    <input className="input" value={accent} onChange={e => setAccent(e.target.value)} />
-                  </div>
-                </div>
+            <div className="grid two">
+              <div>
+                <label className="label">Background</label>
+                <select className="input" value={worldMode} onChange={e => setWorldMode(e.target.value as any)}>
+                  <option value="orbs">Orb Mesh</option>
+                  <option value="matrix">Matrix Drift</option>
+                </select>
               </div>
-
-              <div className="grid two">
-                <div>
-                  <label className="label">Background</label>
-                  <select className="input" value={worldMode} onChange={e => setWorldMode(e.target.value as any)}>
-                    <option value="orbs">Orb Mesh</option>
-                    <option value="matrix">Matrix Drift</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Orb density</label>
-                  <input 
-                    className="input" type="range" min={16} max={160} step={4}
-                    value={orbCount} 
-                    onChange={e => setOrbCount(parseInt(e.target.value, 10))} 
-                  />
-                </div>
+              <div>
+                <label className="label">Orb density</label>
+                <input
+                  className="input" type="range" min={16} max={160} step={4}
+                  value={orbCount}
+                  onChange={e => setOrbCount(parseInt(e.target.value, 10))}
+                />
               </div>
-              <p className="hint">Changes apply instantly and persist on this device.</p>
-            </section>
+            </div>
+            <p className="hint">Changes apply instantly and persist on this device.</p>
+          </section>
 
-            {/* API Keys Vault, Integrations, Privacy, Danger Zone sections ... */}
+          {/* API Keys Vault, Integrations, Privacy, Danger Zone sections ... */}
 
-            <footer className="sb-foot">made with ✨</footer>
-          </div>
-        )}
+          <footer className="sb-foot">made with ✨</footer>
+        </div>
       </aside>
     </>
   );
