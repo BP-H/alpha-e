@@ -396,7 +396,7 @@ export default function AssistantOrb() {
   };
 
   // lifecycle
-  useEffect(() => { applyTransform(pos.x, pos.y); posRef.current = { ...pos }; updateAnchors(); }, []);
+  useEffect(() => { applyTransform(pos.x, pos.y); posRef.current = { ...pos }; updateAnchors(); }, [pos]);
   useEffect(() => { updateAnchors(); }, [open, toast, interim, menuOpen, dragging]);
   useEffect(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, [msgs]);
 
