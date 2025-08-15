@@ -1,7 +1,7 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import RadialMenu from "./RadialMenu";
+import RadialMenu, { RadialMenuItem } from "./RadialMenu";
 
 describe("RadialMenu keyboard navigation", () => {
   const noop = () => {};
@@ -11,14 +11,25 @@ describe("RadialMenu keyboard navigation", () => {
       <RadialMenu
         center={{ x: 0, y: 0 }}
         onClose={noop}
-        onChat={noop}
-        onReact={noop}
-        onComment={noop}
-        onRemix={noop}
-        onShare={noop}
-        onProfile={noop}
-        avatarUrl="/avatar.png"
-        emojis={["😀", "😃", "😄"]}
+        config={([
+          {
+            id: "chat",
+            label: "Chat",
+            icon: "💬",
+            action: noop,
+          },
+          {
+            id: "react",
+            label: "React",
+            icon: "👏",
+            items: ["😀", "😃", "😄"].map((e, i) => ({
+              id: `emoji-${i}`,
+              label: `React ${e}`,
+              icon: e,
+              action: noop,
+            })),
+          },
+        ] satisfies RadialMenuItem[])}
       />
     );
 

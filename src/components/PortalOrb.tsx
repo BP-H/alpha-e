@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import usePointer from "../hooks/usePointer";
 import bus from "../lib/bus";
+import RadialMenu, { RadialMenuItem } from "./RadialMenu";
 
 type Props = {
   onAnalyzeImage: (imgUrl: string) => void;
@@ -19,9 +20,6 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
   const originRef = useRef({ x: 0, y: 0 });
   const [mode, setMode] = useState<Mode>("idle");
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [menuIndex, setMenuIndex] = useState(0);
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("orb-pos");
@@ -166,8 +164,10 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
     analyzeOverlay.current = null;
   }
 
-  const actions: { icon: React.ReactNode; label: string; callback: () => void }[] = [
+  const menuItems: RadialMenuItem[] = [
     {
+      id: "analyze",
+      label: "Analyze",
       icon: (
         <svg viewBox="0 0 24 24" className="ico">
           <path
@@ -187,10 +187,11 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
           />
         </svg>
       ),
-      label: "Analyze",
-      callback: startAnalyze,
+      action: startAnalyze,
     },
     {
+      id: "compose",
+      label: "Compose",
       icon: (
         <svg className="ico" viewBox="0 0 24 24">
           <path
@@ -201,30 +202,26 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
           />
         </svg>
       ),
-      label: "Compose",
-      callback: () => {
-        setMode("idle");
-        setMenuOpen(false);
-        orbRef.current?.classList.remove("grow");
-        bus.emit("compose");
-      },
-    },
-    {
-      icon: (
-        <svg className="ico" viewBox="0 0 24 24">
-          <path
-            d="M5 5l14 14M19 5L5 19"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-      label: "Close",
-      callback: () => {
-        setMode("idle");
-        setMenuOpen(false);
-        orbRef.current?.classList.remove("grow");
-      },
+      items: [
+        {
+          id: "comment",
+          label: "Comment",
+          icon: "✍️",
+          action: () => bus.emit("compose", { type: "comment" }),
+        },
+        {
+          id: "remix",
+          label: "Remix",
+          icon: "🎬",
+          action: () => bus.emit("compose", { type: "remix" }),
+        },
+        {
+          id: "share",
+          label: "Share",
+          icon: "↗️",
+          action: () => bus.emit("compose", { type: "share" }),
+        },
+      ],
     },
   ];
 
@@ -242,38 +239,7 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
     }
   }
 
-  function handleMenuKey(e: React.KeyboardEvent) {
-    const items = itemRefs.current.filter(Boolean) as HTMLButtonElement[];
-    if (!items.length) return;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
-      e.preventDefault();
-      const next = (menuIndex + 1) % items.length;
-      setMenuIndex(next);
-      items[next]?.focus();
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
-      e.preventDefault();
-      const next = (menuIndex - 1 + items.length) % items.length;
-      setMenuIndex(next);
-      items[next]?.focus();
-    } else if (e.key === "Escape") {
-      setMenuOpen(false);
-      setMode("idle");
-      orbRef.current?.focus();
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      items[menuIndex]?.click();
-    }
-  }
-
-  useEffect(() => {
-    if (menuOpen) {
-      setMenuIndex(0);
-      const first = itemRefs.current[0];
-      first?.focus();
-    } else {
-      itemRefs.current = [];
-    }
-  }, [menuOpen]);
+  // no-op: keyboard handling managed by RadialMenu
 
   usePointer(dragging, {
     onMove: handlePointerMove,
@@ -301,47 +267,15 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
         <div className="orb-core" />
         {/* radial menu */}
         {menuOpen && (
-          <div
-            className="radial-menu"
-            role="menu"
-            aria-label="Portal actions"
-            ref={menuRef}
-            onKeyDown={handleMenuKey}
-            aria-activedescendant={`portal-orb-item-${menuIndex}`}
-          >
-            {actions.map((action, i) => {
-              const angle = (360 / actions.length) * i - 90;
-              const rad = (angle * Math.PI) / 180;
-              const iconX = 94 * Math.cos(rad);
-              const iconY = 94 * Math.sin(rad);
-              const labelX = 140 * Math.cos(rad);
-              const labelY = 140 * Math.sin(rad);
-              return (
-                <React.Fragment key={action.label}>
-                  <button
-                    className="rm-item"
-                    onClick={action.callback}
-                    title={action.label}
-                    role="menuitem"
-                    ref={(el) => (itemRefs.current[i] = el)}
-                    tabIndex={menuIndex === i ? 0 : -1}
-                    id={`portal-orb-item-${i}`}
-                    style={{ transform: `translate(${iconX}px, ${iconY}px)` }}
-                  >
-                    {action.icon}
-                  </button>
-                  <span
-                    className="rm-label"
-                    style={{
-                      transform: `translate(${labelX}px, ${labelY}px) translate(-50%, -50%)`,
-                    }}
-                  >
-                    {action.label}
-                  </span>
-                </React.Fragment>
-              );
-            })}
-          </div>
+          <RadialMenu
+            center={{ x: pos.x + 32, y: pos.y + 32 }}
+            onClose={() => {
+              setMenuOpen(false);
+              if (mode === "menu") setMode("idle");
+              orbRef.current?.classList.remove("grow");
+            }}
+            config={menuItems}
+          />
         )}
       </div>
 
@@ -381,20 +315,7 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
         }
         @keyframes spin{ to{ filter:hue-rotate(90deg) saturate(1.3) } }
 
-        .radial-menu{
-          position:absolute;inset:-30px;display:grid;place-items:center;pointer-events:none;
-        }
-        .rm-item{
-          position:absolute;pointer-events:auto;
-          display:grid;place-items:center;gap:6px;padding:6px 8px;background:rgba(16,18,24,.9);
-          border:1px solid var(--stroke-2);color:#fff;
-        }
-        .rm-item .ico{width:18px;height:18px}
-        .rm-label{
-          position:absolute;pointer-events:none;
-          padding:2px 4px;background:rgba(16,18,24,.9);
-          border:1px solid var(--stroke-2);color:#fff;font-size:12px;
-        }
+        .ico{width:18px;height:18px}
         .analyzing .orb-core{ box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 10px 70px rgba(10,132,255,.7) }
       `}</style>
     </>
