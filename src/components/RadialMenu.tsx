@@ -32,6 +32,8 @@ export default function RadialMenu({
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
+  const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
+
   useEffect(() => {
     menuRef.current?.focus();
     setStep("root");
@@ -131,8 +133,30 @@ export default function RadialMenu({
       }
     }
   }
+  const rootRadius = 74;
+  const subRadius = 120;
+  const radius = step === "root" ? rootRadius : subRadius;
+  const { innerWidth: vw, innerHeight: vh } =
+    typeof window !== "undefined" ? window : ({ innerWidth: 0, innerHeight: 0 } as any);
+  const margin = 40;
+  const edgeLeft = center.x < radius + margin;
+  const edgeRight = center.x > vw - radius - margin;
+  const edgeTop = center.y < radius + margin;
+  const edgeBottom = center.y > vh - radius - margin;
+  const safeX = clamp(center.x, radius + margin, vw - radius - margin);
+  const safeY = clamp(center.y, radius + margin, vh - radius - margin);
+  const menuCenter = { x: safeX, y: safeY };
+  let angleOffset = 0;
+  if (edgeTop && edgeLeft) angleOffset = 135;
+  else if (edgeTop && edgeRight) angleOffset = -135;
+  else if (edgeBottom && edgeLeft) angleOffset = 45;
+  else if (edgeBottom && edgeRight) angleOffset = -45;
+  else if (edgeTop) angleOffset = 180;
+  else if (edgeBottom) angleOffset = 0;
+  else if (edgeLeft) angleOffset = 90;
+  else if (edgeRight) angleOffset = -90;
 
-  const angleFor = (i: number, len: number) => (360 / len) * i - 90;
+  const angleFor = (i: number, len: number) => (360 / len) * i - 90 + angleOffset;
 
   function renderItem(
     item: any,
@@ -198,12 +222,12 @@ export default function RadialMenu({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       aria-activedescendant={`assistant-menu-item-${activeId}`}
-      style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
+      style={{ position: "fixed", left: menuCenter.x, top: menuCenter.y, width: 0, height: 0, zIndex: 9998 }}
     >
       {step === "root" && (
         <AnimatePresence>
           {rootItems.map((item, i) =>
-            renderItem(item, i, i === index, 74, currentItems.length)
+            renderItem(item, i, i === index, rootRadius, currentItems.length)
           )}
         </AnimatePresence>
       )}
@@ -239,21 +263,21 @@ export default function RadialMenu({
       {step === "react" && (
         <AnimatePresence>
           {reactItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
+            renderItem(item, i, i === index, subRadius, currentItems.length)
           )}
         </AnimatePresence>
       )}
       {step === "react-all" && (
         <AnimatePresence>
           {reactAllItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
+            renderItem(item, i, i === index, subRadius, currentItems.length)
           )}
         </AnimatePresence>
       )}
       {step === "create" && (
         <AnimatePresence>
           {createItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
+            renderItem(item, i, i === index, subRadius, currentItems.length)
           )}
         </AnimatePresence>
       )}
