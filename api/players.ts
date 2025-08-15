@@ -1,5 +1,11 @@
 // /api/players.ts
-export default function handler(_req: any, res: any) {
+import type { NextApiRequest, NextApiResponse } from "next";
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
   // Cool neutrals (no purple/pink)
   const players = [
     { id: "alice",  name: "Alice",  color: "#7dd3fc" }, // sky-300
@@ -8,5 +14,6 @@ export default function handler(_req: any, res: any) {
     { id: "dara",   name: "Dara",   color: "#fde68a" }, // amber-300
     { id: "eon",    name: "Eon",    color: "#93c5fd" }, // blue-300
   ];
-  res.status(200).json({ ok: true, players });
+
+  return res.status(200).json({ ok: true, players });
 }
