@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./Sidebar.css";
 import bus from "../lib/bus";
 
@@ -24,6 +24,8 @@ function useLocal<T>(key: string, init: T) {
 
 export default function Sidebar() {
   const [open, setOpen] = useLocal("sn.sidebar.open", false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const a = bus.on("sidebar:toggle", () => setOpen(v => !v));
@@ -59,9 +61,24 @@ export default function Sidebar() {
   };
 
   const pages = [
-    { label: "Home", path: "/", icon: "🏠" },
-    { label: "Profile", path: "/profile", icon: "👤" },
-    { label: "Settings", path: "/settings", icon: "⚙️" },
+    {
+      label: "Home",
+      icon: "🏠",
+      action: () => navigate("/"),
+      path: "/",
+    },
+    {
+      label: "Profile",
+      icon: "👤",
+      action: () => navigate("/profile"),
+      path: "/profile",
+    },
+    {
+      label: "Settings",
+      icon: "⚙️",
+      action: () => navigate("/settings"),
+      path: "/settings",
+    },
   ];
 
   return (
@@ -79,18 +96,27 @@ export default function Sidebar() {
               </div>
             </div>
 
-            <nav className="sb-nav" aria-label="Main">
-              <ul>
-                {pages.map(p => (
-                  <li key={p.path}>
-                    <NavLink to={p.path} end>
-                      <span aria-hidden>{p.icon}</span>
-                      <span>{p.label}</span>
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+            <section className="card">
+              <header>Navigation</header>
+              <nav className="sb-nav" aria-label="Navigation">
+                <ul>
+                  {pages.map(p => (
+                    <li key={p.label}>
+                      <button
+                        type="button"
+                        onClick={() => { p.action(); setOpen(false); }}
+                        aria-label={p.label}
+                        className={location.pathname === p.path ? "active" : ""}
+                        aria-current={location.pathname === p.path ? "page" : undefined}
+                      >
+                        {p.icon && <span aria-hidden>{p.icon}</span>}
+                        <span>{p.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </section>
 
             {/* Profile card */}
             <section className="card profile">
