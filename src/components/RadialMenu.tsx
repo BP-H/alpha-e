@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import "./RadialMenu.css";
 
 interface RadialMenuProps {
   center: { x: number; y: number };
@@ -131,20 +132,6 @@ export default function RadialMenu({
     }
   }
 
-  const rbtn: React.CSSProperties = {
-    position: "absolute",
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    display: "grid",
-    placeItems: "center",
-    background: "rgba(14,16,22,.7)",
-    border: "1px solid rgba(255,255,255,.15)",
-    color: "#fff",
-    cursor: "pointer",
-    backdropFilter: "blur(8px) saturate(140%)",
-  };
-
   const angleFor = (i: number, len: number) => (360 / len) * i - 90;
 
   function renderItem(
@@ -164,29 +151,30 @@ export default function RadialMenu({
         role="menuitem"
         tabIndex={-1}
         aria-label={item.label}
-        style={{
-          ...rbtn,
-          left: -20,
-          top: -20,
-        }}
+        className="rbtn"
+        style={{ left: -20, top: -20 }}
         initial={
           reduceMotion
-            ? { scale: 1, opacity: 1, x, y }
-            : { scale: 0, opacity: 0, x: 0, y: 0 }
+            ? { opacity: 1, x, y, scale: 1 }
+            : { opacity: 0, x: 0, y: 0, scale: 0 }
         }
         animate={{
-          scale: 1,
           opacity: 1,
           x,
           y,
+          scale: 1,
           boxShadow: active ? "0 0 0 2px #ff74de" : "none",
         }}
         exit={
           reduceMotion
-            ? { scale: 1, opacity: 1, x, y }
-            : { scale: 0, opacity: 0, x: 0, y: 0 }
+            ? { opacity: 1, x, y, scale: 1 }
+            : { opacity: 0, x: 0, y: 0, scale: 0 }
         }
-        transition={{ duration: reduceMotion ? 0 : 0.2 }}
+        transition={{
+          duration: reduceMotion ? 0 : 0.25,
+          ease: [0.4, 0, 0.2, 1],
+        }}
+        whileHover={reduceMotion ? undefined : { scale: 1.1 }}
         onClick={() => {
           if (item.next) {
             setStep(item.next);
@@ -226,11 +214,16 @@ export default function RadialMenu({
           role="menuitem"
           tabIndex={-1}
           aria-label={step === "root" ? "Close" : "Back"}
-          style={{ ...rbtn, left: -20, top: -20 }}
-          initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0 : 0.2 }}
+          className="rbtn"
+          style={{ left: -20, top: -20 }}
+          initial={reduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={reduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+          transition={{
+            duration: reduceMotion ? 0 : 0.25,
+            ease: [0.4, 0, 0.2, 1],
+          }}
+          whileHover={reduceMotion ? undefined : { scale: 1.1 }}
           onClick={() => {
             if (step === "root") {
               onClose();

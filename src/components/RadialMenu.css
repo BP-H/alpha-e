@@ -1,0 +1,20 @@
+.rbtn {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: rgba(14, 16, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px) saturate(140%);
+  transform-origin: center;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rbtn:hover {
+  background: rgba(14, 16, 22, 0.85);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
