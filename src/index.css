@@ -65,6 +65,17 @@ body{
   background: #0b0f1a;
   color: #fff;
   font-weight: 700;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+.primary:hover,
+.primary:focus-visible{
+  transform: scale(1.03);
+  filter: brightness(1.1);
+  box-shadow: 0 0 0 3px rgba(11,15,26,.2);
+}
+.primary:active{
+  transform: scale(0.96);
+  filter: brightness(0.9);
 }
 .nav{ margin-top: 18px; }
 .nav__label{
@@ -140,8 +151,18 @@ body{
   font-weight: 700;
   font-size: 12px;
   box-shadow: 0 6px 16px rgba(11,15,26,.16);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
-.chip:active{ transform: translateY(1px) }
+.chip:hover,
+.chip:focus-visible{
+  transform: scale(1.05);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 22px rgba(11,15,26,.2);
+}
+.chip:active{
+  transform: scale(0.97) translateY(1px);
+  filter: brightness(0.95);
+}
 
 /* --- world ------------------------------------------------------------ */
 .world{ position:fixed; inset:0; background: var(--bg); }
