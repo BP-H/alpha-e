@@ -305,8 +305,12 @@ export default function AssistantOrb() {
       const { dx, dy, sx, sy } = pressRef.current!;
       const nx = clamp(cur.x - dx, ORB_MARGIN, Math.max(ORB_MARGIN, window.innerWidth - ORB_SIZE - ORB_MARGIN));
       const ny = clamp(cur.y - dy, ORB_MARGIN, Math.max(ORB_MARGIN, window.innerHeight - ORB_SIZE - ORB_MARGIN));
-
-      if (!movedRef.current && Math.hypot(cur.x - sx, cur.y - sy) > DRAG_THRESHOLD) {
+      const dist = Math.hypot(cur.x - sx, cur.y - sy);
+      if (holdTimerRef.current && dist > DRAG_THRESHOLD) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
+      if (!movedRef.current && dist > DRAG_THRESHOLD) {
         movedRef.current = true;
         preventTapRef.current = true;
         // Start listening once drag threshold is crossed (your request)
@@ -327,6 +331,7 @@ export default function AssistantOrb() {
   };
 
   function finishGesture(clientX: number, clientY: number) {
+    pressRef.current = null;
     if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
     if (moveRafRef.current != null) { cancelAnimationFrame(moveRafRef.current); moveRafRef.current = null; }
 
@@ -361,8 +366,14 @@ export default function AssistantOrb() {
     finishGesture(e.clientX, e.clientY);
   };
 
+  const onPointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
+    lastPtrRef.current = null;
+    finishGesture(e.clientX, e.clientY);
+  };
+
   const onLostPointerCapture = () => {
     const last = lastPtrRef.current;
+    lastPtrRef.current = null;
     const fallback = { x: posRef.current.x + ORB_SIZE / 2, y: posRef.current.y + ORB_SIZE / 2 };
     finishGesture(last?.x ?? fallback.x, last?.y ?? fallback.y);
   };
@@ -509,7 +520,7 @@ export default function AssistantOrb() {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
-        onPointerCancel={onPointerEnd}
+        onPointerCancel={onPointerCancel}
         onLostPointerCapture={onLostPointerCapture}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
