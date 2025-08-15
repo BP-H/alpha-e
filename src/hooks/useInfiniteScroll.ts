@@ -18,6 +18,28 @@ export function useInfiniteScroll<T>(opts: {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (items.length !== 0) return;
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const next = await loadMore();
+        if (!cancelled) {
+          setItems((prev) => prev.concat(next));
+          setPage((p) => p + 1);
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || "Load failed");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const io = new IntersectionObserver(async (entries) => {
       const e = entries[0];
