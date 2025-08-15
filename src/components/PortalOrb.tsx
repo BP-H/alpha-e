@@ -8,10 +8,13 @@ type Mode = "idle" | "menu" | "analyze";
 
 const HOLD_MS = 600;
 const SNAP_PADDING = 12;
+const MOVE_TOLERANCE = 8;
 
 export default function PortalOrb({ onAnalyzeImage }: Props) {
   const orbRef = useRef<HTMLDivElement>(null);
   const holdRef = useRef<number | null>(null);
+  const moveRef = useRef<(ev: PointerEvent) => void>();
+  const upRef = useRef<(ev: PointerEvent) => void>();
   const [mode, setMode] = useState<Mode>("idle");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -63,6 +66,8 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
     setDragging(true);
     const startX = e.clientX - pos.x;
     const startY = e.clientY - pos.y;
+    const originX = e.clientX;
+    const originY = e.clientY;
 
     // long-press => open radial menu
     holdRef.current = window.setTimeout(() => {
@@ -75,7 +80,15 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
       if (!dragging) return;
       const next = withinSafe(ev.clientX - startX, ev.clientY - startY);
       setPos(next);
+      if (
+        holdRef.current &&
+        Math.hypot(ev.clientX - originX, ev.clientY - originY) > MOVE_TOLERANCE
+      ) {
+        clearTimeout(holdRef.current);
+        holdRef.current = null;
+      }
     }
+    moveRef.current = move;
 
     function up(ev: PointerEvent) {
       setDragging(false);
@@ -98,18 +111,36 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
 
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      moveRef.current = undefined;
+      upRef.current = undefined;
     }
+    upRef.current = up;
 
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
   }
 
-  function handlePointerCancel() {
+  function handlePointerCancel(e: React.PointerEvent) {
+    try {
+      (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+    } catch {}
     setDragging(false);
     if (holdRef.current) {
       clearTimeout(holdRef.current);
       holdRef.current = null;
     }
+    if (moveRef.current) {
+      window.removeEventListener("pointermove", moveRef.current);
+      moveRef.current = undefined;
+    }
+    if (upRef.current) {
+      window.removeEventListener("pointerup", upRef.current);
+      upRef.current = undefined;
+    }
+    setMode("idle");
+    setMenuOpen(false);
+    orbRef.current?.classList.remove("grow");
+    teardownAnalyzeOverlay();
   }
 
   function startAnalyze() {
