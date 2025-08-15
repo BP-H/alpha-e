@@ -18,6 +18,8 @@ export default function PostCard({ post }: { post: Post }) {
   const [reactions, setReactions] = useState<string[]>([]);
   const [comments, setComments] = useState<string[]>([]);
   const [reactOpen, setReactOpen] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
+  const cmtRef = useRef<HTMLInputElement | null>(null);
 
   // bus hooks (unchanged logic)
   useEffect(() => {
@@ -31,6 +33,8 @@ export default function PostCard({ post }: { post: Post }) {
     });
     return () => { try { off1?.(); off2?.(); } catch {} };
   }, [post.id]);
+
+  useEffect(() => { if (commentOpen) cmtRef.current?.focus(); }, [commentOpen]);
 
   // media picking
   const pdf     = (post as any)?.pdf as string | undefined;
@@ -165,7 +169,7 @@ export default function PostCard({ post }: { post: Post }) {
                       fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <button className="pc-btn" title="Comment" onClick={() => setReactOpen(false)}>
+            <button className="pc-btn" title="Comment" onClick={() => { setCommentOpen((v) => !v); setReactOpen(false); }}>
               <svg className="pc-ico" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 5h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 5v-5H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
                       fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
@@ -207,6 +211,40 @@ export default function PostCard({ post }: { post: Post }) {
             </button>
           ))}
           <button className="pc-react-close" onClick={() => setReactOpen(false)} aria-label="Close">✕</button>
+        </div>
+      )}
+
+      {commentOpen && (
+        <div className="pc-comment-box" role="region" aria-label="Comments">
+          {comments.length ? (
+            <ul className="pc-comments">
+              {comments.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          ) : (
+            <div className="pc-empty">No comments</div>
+          )}
+          <form
+            className="pc-addcmt"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const t = cmtRef.current?.value.trim();
+              if (!t) return;
+              bus.emit?.("post:comment", { id: post.id, body: t });
+              if (cmtRef.current) cmtRef.current.value = "";
+            }}
+          >
+            <input ref={cmtRef} name="cmt" placeholder="Write a comment…" />
+            <button type="submit">Send</button>
+          </form>
+          <button
+            className="pc-comment-close"
+            onClick={() => setCommentOpen(false)}
+            aria-label="Close"
+          >
+            ✕
+          </button>
         </div>
       )}
     </article>

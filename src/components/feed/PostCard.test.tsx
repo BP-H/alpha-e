@@ -14,7 +14,7 @@ describe("PostCard image grid", () => {
 
   it("renders multiple images", () => {
     const { container } = render(<PostCard post={post} />);
-    const gallery = container.querySelector(".pc-gallery") as HTMLElement;
+    const gallery = container.querySelector(".pc-carousel") as HTMLElement;
     const imgs = Array.from(gallery.querySelectorAll("img")) as HTMLImageElement[];
     expect(imgs.length).toBe(3);
     expect(imgs[0].getAttribute("src")).toBe("/a.jpg");
