@@ -54,6 +54,7 @@ export default function RadialMenu({
           <img
             src={avatarUrl}
             alt=""
+            aria-hidden="true"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ),
