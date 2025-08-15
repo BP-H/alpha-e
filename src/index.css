@@ -22,6 +22,18 @@
   --rm-blur: 14px;
   --rm-ink: var(--ink-0);
   --rm-ring: #ff74de;
+  --orb-size: 76px;
+  --orb-ring: color-mix(in srgb, var(--rm-ring) 25%, transparent);
+  --orb-shadow: 0 12px 30px rgba(0,0,0,.35), 0 0 0 8px var(--orb-ring);
+  --orb-bg: radial-gradient(120% 120% at 30% 30%, rgba(255,255,255,.9), var(--orb-ring) 60%, var(--rm-ring));
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --orb-ring: color-mix(in srgb, var(--rm-ring) 35%, transparent);
+    --orb-shadow: 0 12px 30px rgba(0,0,0,.65), 0 0 0 8px var(--orb-ring);
+    --orb-bg: radial-gradient(120% 120% at 30% 30%, rgba(20,24,32,.85), var(--orb-ring) 60%, var(--rm-ring));
+  }
 }
 
 @media (prefers-color-scheme: dark){

@@ -1,10 +1,3 @@
-:root {
-  /* Assistant orb theme tokens */
-  --orb-size: 76px;
-  --orb-color: var(--pink, #ff74de);
-  --orb-blur: 14px;
-}
-
 .assistant-orb {
   position: fixed;
   width: var(--orb-size);
@@ -15,16 +8,9 @@
   place-items: center;
   cursor: grab;
   overflow: hidden;
-  background: radial-gradient(
-    120% 120% at 30% 30%,
-    #fff,
-    color-mix(in srgb, var(--orb-color) 45%, transparent) 60%,
-    var(--orb-color)
-  );
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.35),
-    0 0 0 8px color-mix(in srgb, var(--orb-color) 25%, transparent);
-  backdrop-filter: blur(var(--orb-blur)) saturate(140%);
+  background: var(--orb-bg);
+  box-shadow: var(--orb-shadow);
+  backdrop-filter: blur(14px) saturate(140%);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
   touch-action: none;
 }
@@ -54,7 +40,8 @@
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 24px var(--orb-ring);
+  filter: blur(4px);
 }
 
 .assistant-orb.mic .assistant-orb__ring {
@@ -63,7 +50,7 @@
 
 @keyframes orb-ping {
   0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--orb-color) 30%, transparent 70%);
+    box-shadow: 0 0 0 0 var(--orb-ring);
   }
   100% {
     box-shadow: 0 0 0 28px rgba(0, 0, 0, 0);
