@@ -110,7 +110,7 @@ export default function AssistantOrb() {
   useEffect(() => {
     const a = bus.on?.("feed:hover", (p: { post: Post }) => setCtxPost(p.post));
     const b = bus.on?.("feed:select", (p: { post: Post }) => setCtxPost(p.post));
-    return () => { try { a?.(); } catch {} try { b?.(); } catch {} };
+    return () => { try { a?.(); } catch {}; try { b?.(); } catch {}; };
   }, []);
 
   // speech
