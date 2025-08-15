@@ -61,7 +61,12 @@ export default function BackgroundVoid() {
             metalness={0.55}
           />
           {positions.map((p, i) => (
-            <Float key={i} floatIntensity={0.6} rotationIntensity={0.25} speed={0.9 + (i % 4) * 0.15}>
+            <Float
+              key={p.join(",")}
+              floatIntensity={0.6}
+              rotationIntensity={0.25}
+              speed={0.9 + (i % 4) * 0.15}
+            >
               <Instance position={p} />
             </Float>
           ))}
