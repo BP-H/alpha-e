@@ -187,8 +187,21 @@ export default function PostCard({ post }: { post: Post }) {
               title="Share"
               aria-label="Share"
               onClick={async () => {
-                const url = `${location.origin}${location.pathname}#post-${post.id}`;
-                try { await navigator.clipboard.writeText(url); } catch {}
+                if (
+                  typeof location !== "undefined" &&
+                  typeof navigator !== "undefined" &&
+                  typeof navigator.clipboard !== "undefined" &&
+                  typeof navigator.clipboard.writeText === "function"
+                ) {
+                  const url = `${location.origin}${location.pathname}#post-${post.id}`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                  } catch {}
+                } else {
+                  try {
+                    console.warn?.("Clipboard not available");
+                  } catch {}
+                }
               }}
             >
               <span className="ico share" />
