@@ -21,3 +21,14 @@
   background: var(--rm-bg-hover);
   box-shadow: var(--rm-shadow-hover);
 }
+
+.rm-label {
+  position: absolute;
+  pointer-events: none;
+  padding: 2px 4px;
+  background: rgba(16, 18, 24, 0.9);
+  border: 1px solid var(--stroke-2);
+  color: #fff;
+  font-size: 12px;
+  transform: translate(-50%, -50%);
+}
