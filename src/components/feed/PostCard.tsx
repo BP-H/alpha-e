@@ -4,42 +4,40 @@ import type { Post } from "../../types";
 import bus from "../../lib/bus";
 import { ensureModelViewer } from "../../lib/ensureModelViewer";
 
-// tiny helper
 const isBlob = (u?: string | null) => !!u && u.startsWith("blob:");
 
-/**
- * PostCard (mobile-first, frosted-glass)
- * - Clean top glass info bar
- * - Bottom glass bar: avatar (left) + 4 icon-only actions (react / comment / remix / share)
- * - Reaction opens in-card emoji drawer (uses same list style as Orb; no new files)
- * - Comments live in the same drawer (simple input)
- * - Media priority: PDF → 3D → Video → Images (interactive on mobile)
- */
+/* Minimal linear emoji set (same spirit as AssistantOrb; can extend freely) */
+const EMOJI_LIST: string[] = [
+  "❤️","👏","🔥","✨","👍","😂","😍","😮","😢","😡",
+  "🥳","🤯","🤔","🫡","💯","🎉","⚡","🚀","💡","🌟",
+  "🧠","🎬","🎮","📎","🌀","🧩","📈","🎵","📚","🍕"
+];
+
+type DrawerTab = "react" | "comment" | null;
+
 export default function PostCard({ post }: { post: Post }) {
-  const [drawer, setDrawer] = useState<null | "emoji" | "comments">(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [tab, setTab] = useState<DrawerTab>(null);
   const [comments, setComments] = useState<string[]>([]);
   const [reactions, setReactions] = useState<string[]>([]);
 
+  // bus hooks (unchanged logic; we just show them in a clearer drawer)
   useEffect(() => {
     const off1 = bus.on?.("post:comment", ({ id, body }) => {
       if (String(id) !== String(post.id)) return;
-      setDrawer("comments");
+      setDrawerOpen(true); setTab("comment");
       setComments((s) => [body, ...s]);
     });
     const off2 = bus.on?.("post:react", ({ id, emoji }) => {
       if (String(id) !== String(post.id)) return;
-      setDrawer("emoji");
-      setReactions((s) => [emoji, ...s].slice(0, 60));
+      setDrawerOpen(true); setTab("react");
+      setReactions((s) => [emoji, ...s].slice(0, 64));
     });
     const off3 = bus.on?.("post:focus", ({ id }) => {
       if (String(id) !== String(post.id)) return;
-      setDrawer("comments");
+      setDrawerOpen(true);
     });
-    return () => {
-      try { off1?.(); } catch {}
-      try { off2?.(); } catch {}
-      try { off3?.(); } catch {}
-    };
+    return () => { try { off1?.(); off2?.(); off3?.(); } catch {} };
   }, [post.id]);
 
   // media selection
@@ -47,11 +45,9 @@ export default function PostCard({ post }: { post: Post }) {
   const model3d = (post as any)?.model3d as string | undefined;
   const video = (post as any)?.video as string | undefined;
 
-  useEffect(() => {
-    if (model3d) { ensureModelViewer().catch(() => {}); }
-  }, [model3d]);
+  useEffect(() => { if (model3d) ensureModelViewer().catch(() => {}); }, [model3d]);
 
-  // Build image list (images[] preferred, else image/cover, else fallback)
+  // build image list (images[] preferred, else image/cover, else fallback)
   const images = useMemo(() => {
     const out: string[] = [];
     const srcs =
@@ -75,55 +71,54 @@ export default function PostCard({ post }: { post: Post }) {
     const el = e.currentTarget as any;
     try { el.style.opacity = "1"; } catch {}
     const src: string = el.currentSrc || el.src || el.getAttribute?.("src") || "";
-    if (src && src.startsWith("blob:")) {
-      try { URL.revokeObjectURL(src); } catch {}
-    }
+    if (src && src.startsWith("blob:")) { try { URL.revokeObjectURL(src); } catch {} }
   };
 
   const imgCount = images.length;
   const gridImages = images.slice(0, 4);
   const extra = imgCount > 4 ? imgCount - 4 : 0;
 
-  // emoji list (mirrors Assistant orb feel; kept local to avoid new files)
-  const EMOJI_LIST: string[] = [
-    "🤗","😂","🤣","😅","🙂","😉","😍","😎","🥳","🤯","😡","😱","🤔","🤭","🙄","🥺","🤪","🤫","🤤","😴",
-    "👻","🤖","👽","😈","👋","👍","👎","👏","🙏","👀","💪","🫶","💅","🔥","✨","⚡","💥","❤️","🫠","🫡",
-    "💙","💜","🖤","🤍","❤️‍🔥","❤️‍🩹","💯","💬","🗯️","🎉","🎊","🎁","🏆","🎮","🚀","✈️","🚗","🏠","🫨","🗿",
-    "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩"
-  ];
-
   return (
-    <article
-      className={`pc ${drawer ? "dopen" : ""}`}
-      data-post-id={String(post?.id || "")}
-      id={`post-${post.id}`}
-    >
-      {/* media wrapper */}
-      <div className={`pc-media ${imgCount > 1 && !video && !pdf && !model3d ? "has-grid" : ""}`}>
+    <article className="pc" data-post-id={String(post?.id || "")} id={`post-${post.id}`}>
+      {/* --- TOP FROSTED INFO BAR (outside media) --- */}
+      <header className="pc-headbar" aria-label="Post meta">
+        <div className="pc-ava small" title={post?.author}>
+          <img src={post?.authorAvatar || "/avatar.jpg"} alt={post?.author || "user"} />
+        </div>
+        <div className="pc-meta">
+          <div className="pc-handle">{post?.author || "@user"}</div>
+          <div className="pc-sub">{post?.time || "now"} • {post?.location || "superNova"}</div>
+        </div>
+        {post?.title && <div className="pc-title">{post.title}</div>}
+      </header>
+
+      {/* --- MEDIA (image / grid / video / 3D / PDF) --- */}
+      <div className="pc-media">
         {/* Priority: PDF → 3D → Video → Images */}
         {pdf ? (
           <iframe
-            src={pdf}
-            title="PDF"
+            className="pc-embed"
+            src={`${pdf}#toolbar=0&navpanes=0&scrollbar=0`}
+            title="PDF preview"
+            loading="lazy"
             onLoad={onMediaReady}
-            style={{ opacity: 0 }}
           />
         ) : model3d ? (
           <model-viewer
+            class="pc-embed"
             src={model3d}
             camera-controls
             onLoad={onMediaReady as any}
-            style={{ opacity: 0 }}
           />
         ) : video ? (
           <video
+            className="pc-embed"
             src={video}
             controls
             playsInline
             preload="metadata"
             crossOrigin={isBlob(video) ? undefined : "anonymous"}
             onLoadedData={onMediaReady}
-            style={{ opacity: 0, pointerEvents: "auto" }}
           />
         ) : imgCount > 1 ? (
           <>
@@ -136,6 +131,7 @@ export default function PostCard({ post }: { post: Post }) {
                     src={src}
                     alt={post?.title || post?.author || "post"}
                     loading="lazy"
+                    decoding="async"
                     crossOrigin={isBlob(src) ? undefined : "anonymous"}
                     className={`pc-tile ${imgReady[i] ? "ready" : ""}`}
                     onLoad={() => onImgLoad(i)}
@@ -147,164 +143,123 @@ export default function PostCard({ post }: { post: Post }) {
           </>
         ) : (
           <img
+            className="pc-embed"
             src={images[0]}
             alt={post?.title || post?.author || "post"}
             loading="lazy"
             crossOrigin={isBlob(images[0]) ? undefined : "anonymous"}
             onLoad={onMediaReady}
-            style={{ opacity: 0 }}
           />
         )}
+      </div>
 
-        {/* Top frosted info bar (clean) */}
-        <div className="pc-topbar">
-          <div className="pc-ava" title={post?.author}>
-            <img
-              src={post?.authorAvatar || "/avatar.jpg"}
-              alt={post?.author || "user"}
-            />
-          </div>
-          <div className="pc-meta">
-            <div className="pc-handle">{post?.author || "@user"}</div>
-            <div className="pc-sub">
-              {post?.time || "now"} • {post?.location || "superNova"}
-            </div>
-          </div>
-          {post?.title && <div className="pc-title">{post.title}</div>}
+      {/* --- BOTTOM FROSTED ACTION BAR (outside media) --- */}
+      <div className="pc-botbar" role="toolbar" aria-label="Post actions">
+        <div
+          className="pc-ava"
+          title={`View ${post?.author || "profile"}`}
+          onClick={() => bus.emit?.("profile:open", { id: post.author })}
+          role="button"
+        >
+          <img src={post?.authorAvatar || "/avatar.jpg"} alt={post?.author || "user"} />
         </div>
 
-        {/* Bottom frosted bar: avatar (left) + 4 icons (right) */}
-        <div className="pc-botbar">
-          <div
-            className="pc-ava pc-ava-bottom"
-            title={`View ${post?.author}'s profile`}
-            onClick={() => bus.emit?.("profile:open", { id: post.author })}
-            role="button"
+        <div className="pc-actions">
+          <button
+            className="pc-act"
+            title="React"
+            aria-label="React"
+            onClick={() => { setDrawerOpen((v) => !v); setTab("react"); }}
           >
-            <img
-              src={post?.authorAvatar || "/avatar.jpg"}
-              alt={post?.author || "user"}
-            />
-          </div>
-
-          <div className="pc-actions">
-            {/* React → open emoji drawer */}
-            <button
-              className="pc-act"
-              title="React"
-              aria-label="React"
-              onClick={() => setDrawer(d => (d === "emoji" ? null : "emoji"))}
-            >
-              <span className="ico react" />
-            </button>
-
-            {/* Comment → open comments drawer */}
-            <button
-              className="pc-act"
-              title="Comment"
-              aria-label="Comment"
-              onClick={() => setDrawer(d => (d === "comments" ? null : "comments"))}
-            >
-              <span className="ico comment" />
-            </button>
-
-            {/* Remix (emit, keeps layout) */}
-            <button
-              className="pc-act"
-              title="Remix"
-              aria-label="Remix"
-              onClick={() => bus.emit?.("post:remix", { id: post.id })}
-            >
-              <span className="ico remix" />
-            </button>
-
-            {/* Share (copy link) */}
-            <button
-              className="pc-act"
-              title="Share"
-              aria-label="Share"
-              onClick={async () => {
-                if (typeof location === "undefined") return;
+            <span className="ico react" />
+          </button>
+          <button
+            className="pc-act"
+            title="Comment"
+            aria-label="Comment"
+            onClick={() => { setDrawerOpen((v) => !v); setTab("comment"); }}
+          >
+            <span className="ico comment" />
+          </button>
+          <button
+            className="pc-act"
+            title="Remix"
+            aria-label="Remix"
+            onClick={() => bus.emit?.("post:remix", { id: post.id })}
+          >
+            <span className="ico remix" />
+          </button>
+          <button
+            className="pc-act"
+            title="Share"
+            aria-label="Share"
+            onClick={async () => {
+              if (
+                typeof location !== "undefined" &&
+                typeof navigator !== "undefined" &&
+                typeof navigator.clipboard !== "undefined" &&
+                typeof navigator.clipboard.writeText === "function"
+              ) {
                 const url = `${location.origin}${location.pathname}#post-${post.id}`;
-                try {
-                  await navigator.clipboard.writeText(url);
-                } catch {}
-              }}
-            >
-              <span className="ico share" />
-            </button>
-          </div>
+                try { await navigator.clipboard.writeText(url); } catch {}
+              }
+            }}
+          >
+            <span className="ico share" />
+          </button>
         </div>
       </div>
 
-      {/* Drawer (frosted, inside-card) */}
-      <div className="pc-drawer">
-        {/* Emoji picker */}
-        {drawer === "emoji" && (
-          <div className="pc-emoji">
-            <div className="pc-emoji-grid" role="listbox" aria-label="Reactions">
-              {EMOJI_LIST.map((e, i) => (
+      {/* --- SLIDE DRAWER (emoji / comments) --- */}
+      <div className={`pc-drawer ${drawerOpen ? "open" : ""}`}>
+        {/* REACT TAB */}
+        {tab === "react" && (
+          <div className="pc-dsec">
+            <div className="pc-dtitle">Reactions</div>
+            <div className="pc-emoji">
+              {EMOJI_LIST.map((e) => (
                 <button
-                  key={`${e}-${i}`}
-                  className="pc-emoji-btn"
-                  onClick={() => {
-                    setReactions((s) => [e, ...s].slice(0, 60));
-                    bus.emit?.("post:react", { id: post.id, emoji: e });
-                  }}
+                  key={e}
+                  className="pc-emo"
+                  onClick={() => bus.emit?.("post:react", { id: post.id, emoji: e })}
                   aria-label={`React ${e}`}
                 >
                   {e}
                 </button>
               ))}
             </div>
-            {reactions.length > 0 && (
-              <div className="pc-recent">
-                <strong>Recent</strong>
-                <div className="pc-recent-row">
-                  {reactions.slice(0, 12).map((e, i) => (
-                    <span key={`r-${i}`} className="pc-recent-emoji">{e}</span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="pc-react-stream">
+              {reactions.length ? reactions.map((e, i) => <span key={`${e}-${i}`}>{e}</span>)
+                : <span className="pc-empty">—</span>}
+            </div>
           </div>
         )}
 
-        {/* Comments */}
-        {drawer === "comments" && (
-          <div className="pc-comments">
+        {/* COMMENT TAB */}
+        {tab === "comment" && (
+          <div className="pc-dsec">
+            <div className="pc-dtitle">Comments</div>
             <form
-              className="pc-comment-form"
+              className="pc-cform"
               onSubmit={(e) => {
                 e.preventDefault();
-                const input = e.currentTarget.elements.namedItem("cmt") as HTMLInputElement;
+                const input = (e.currentTarget.elements.namedItem("cmt") as HTMLInputElement);
                 const t = input.value.trim();
                 if (!t) return;
-                setComments((s) => [t, ...s]);
                 bus.emit?.("post:comment", { id: post.id, body: t });
                 input.value = "";
               }}
             >
-              <input
-                name="cmt"
-                className="pc-comment-input"
-                placeholder="Write a comment…"
-                autoComplete="off"
-              />
-              <button className="pc-comment-send" type="submit">Send</button>
+              <input name="cmt" className="pc-cinput" placeholder="Write a comment…" />
+              <button className="pc-csend" type="submit">Send</button>
             </form>
-
-            <div className="pc-comment-list">
-              {comments.length ? (
-                <ul>
-                  {comments.map((c, i) => (
-                    <li key={i}>{c}</li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="pc-comment-empty">No comments yet — be first.</div>
-              )}
-            </div>
+            {comments.length ? (
+              <ul className="pc-clist">
+                {comments.map((c, i) => (<li key={i}>{c}</li>))}
+              </ul>
+            ) : (
+              <div className="pc-empty">—</div>
+            )}
           </div>
         )}
       </div>
