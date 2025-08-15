@@ -2,13 +2,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
+import RadialMenu from "./RadialMenu";
 
 /**
  * Assistant Orb — circular quick menu + 60fps drag + voice.
- * - Tap = show radial menu (Chat top / React / Comment / Remix / Profile)
+ * - Tap = show radial menu (Chat / React / Comment / Remix / Share)
  * - Hold = push-to-talk; Double-click = toggle mic
  * - Drag (cross threshold) also starts mic; drop over post links context
- * - Petal drawers for React/Comment/Remix; Chat panel on side
+ * - Petal drawers for Comment/Remix; Chat panel on side
  */
 
 type SpeechRecognitionLike = {
@@ -39,12 +40,6 @@ const uuid = () => {
   }
 };
 
-const EMOJI_LIST: string[] = [
-  "🤗","😂","🤣","😅","🙂","😉","😍","😎","🥳","🤯","😡","😱","🤔","🤭","🙄","🥺","🤪","🤫","🤤","😴",
-  "👻","🤖","👽","😈","👋","👍","👎","👏","🙏","👀","💪","🫶","💅","🔥","✨","⚡","💥","❤️","🫠","🫡",
-  "💙","💜","🖤","🤍","❤️‍🔥","❤️‍🩹","💯","💬","🗯️","🎉","🎊","🎁","🏆","🎮","🚀","✈️","🚗","🏠","🫨","🗿",
-  "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩"
-];
 
 async function askLLMStub(text: string) {
   return `🤖 I’m a stub, but I heard: “${text}”`;
@@ -84,7 +79,7 @@ export default function AssistantOrb() {
   const [ctxPost, setCtxPost] = useState<Post | null>(null);
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
-  const [petal, setPetal] = useState<null | "react" | "comment" | "remix" | "share">(null);
+  const [petal, setPetal] = useState<null | "comment" | "remix">(null);
 
   // gestures
   const movedRef = useRef(false);
@@ -102,11 +97,6 @@ export default function AssistantOrb() {
   const interimRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const msgListRef = useRef<HTMLDivElement | null>(null);
-  const btnChatRef   = useRef<HTMLButtonElement | null>(null);
-  const btnReactRef  = useRef<HTMLButtonElement | null>(null);
-  const btnCommentRef= useRef<HTMLButtonElement | null>(null);
-  const btnRemixRef  = useRef<HTMLButtonElement | null>(null);
-  const btnProfileRef= useRef<HTMLButtonElement | null>(null);
 
   // feed context
   useEffect(() => {
@@ -203,12 +193,6 @@ export default function AssistantOrb() {
     push({ id: uuid(), role: "assistant", text: resp, ts: Date.now() });
   }
 
-  function handleEmojiClick(emoji: string) {
-    if (!ctxPost) { setToast("Hover a post first"); return; }
-    bus.emit?.("post:react", { id: ctxPost.id, emoji });
-    setToast(`Reacted ${emoji}`);
-    setTimeout(() => setToast(""), 900);
-  }
 
   // hover highlight
   function setHover(id: string | null) {
@@ -228,18 +212,6 @@ export default function AssistantOrb() {
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  function place(el: HTMLElement | null, rad: number, deg: number) {
-    if (!el) return;
-    const { x, y } = posRef.current;
-    const cx = x + ORB_SIZE / 2;
-    const cy = y + ORB_SIZE / 2;
-    const a = (deg * Math.PI) / 180;
-    const bx = cx + rad * Math.cos(a) - el.offsetWidth / 2;
-    const by = cy + rad * Math.sin(a) - el.offsetHeight / 2;
-    el.style.position = "fixed";
-    el.style.left = `${bx}px`;
-    el.style.top = `${by}px`;
-  }
 
   function updateAnchors() {
     if (typeof window === "undefined") return;
@@ -277,13 +249,6 @@ export default function AssistantOrb() {
       else { s.left = `${x - 8}px`; s.right = ""; s.transform = "translateX(-100%)"; }
     }
 
-    if (menuOpen && !dragging) {
-      place(btnChatRef.current!,    84, -90); // top
-      place(btnReactRef.current!,   74, 220); // bottom-left
-      place(btnCommentRef.current!, 78, 270); // bottom
-      place(btnRemixRef.current!,   74, 320); // bottom-right
-      place(btnProfileRef.current!, 74, 180); // left
-    }
   }
 
   // pointer handlers
@@ -482,19 +447,6 @@ export default function AssistantOrb() {
     backdropFilter: "blur(10px) saturate(140%)",
     animation: "panelIn .2s ease-out",
   };
-  const rbtn: React.CSSProperties = {
-    position: "fixed",
-    zIndex: 9998,
-    width: 40, height: 40,
-    borderRadius: 999,
-    display: "grid",
-    placeItems: "center",
-    background: "rgba(14,16,22,.7)",
-    border: "1px solid rgba(255,255,255,.15)",
-    color: "#fff",
-    cursor: "pointer",
-    backdropFilter: "blur(8px) saturate(140%)",
-  };
 
   return (
     <>
@@ -521,15 +473,27 @@ export default function AssistantOrb() {
 
       {/* Radial menu */}
       {menuOpen && !dragging && (
-        <>
-          <button ref={btnChatRef} style={rbtn} aria-label="Chat" title="Chat" onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}>💬</button>
-          <button ref={btnReactRef} style={rbtn} aria-label="React" title="React" onClick={() => setPetal("react")}>👏</button>
-          <button ref={btnCommentRef} style={rbtn} aria-label="Comment" title="Comment" onClick={() => setPetal("comment")}>✍️</button>
-          <button ref={btnRemixRef} style={rbtn} aria-label="Remix" title="Remix" onClick={() => setPetal("remix")}>🎬</button>
-          <button ref={btnProfileRef} style={{ ...rbtn, padding: 0, overflow: "hidden" }} aria-label="Profile" title="Profile" onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}>
-            <img src={ctxPost?.authorAvatar || "/avatar.jpg"} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </button>
-        </>
+        <RadialMenu
+          onSelect={(id) => {
+            setMenuOpen(false);
+            if (id === "chat") {
+              setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors);
+            } else if (id.startsWith("react:")) {
+              const emoji = id.split(":")[1];
+              if (ctxPost) { bus.emit?.("post:react", { id: ctxPost.id, emoji }); setToast(`Reacted ${emoji}`); setTimeout(() => setToast(""), 900); }
+            } else if (id === "comment") {
+              setPetal("comment");
+            } else if (id === "remix") {
+              setPetal("remix");
+            } else if (id.startsWith("share:")) {
+              if (ctxPost && id === "share:copy") {
+                const url = `${location.origin}${location.pathname}#post-${ctxPost.id}`;
+                navigator.clipboard?.writeText?.(url).then(() => { setToast("Link copied"); setTimeout(() => setToast(""), 900); }).catch(() => {});
+              }
+            }
+          }}
+          style={{ transform: `translate3d(${pos.x + ORB_SIZE / 2}px, ${pos.y + ORB_SIZE / 2}px, 0)` }}
+        />
       )}
 
       {/* toast + interim */}
@@ -600,18 +564,10 @@ export default function AssistantOrb() {
         <div className="assistant-petal">
           <div className="ap-head">
             <div className="ap-dot" />
-            <div className="ap-title">{petal === "react" ? "React" : petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
+            <div className="ap-title">{petal === "comment" ? "Comment" : "Remix"}</div>
             <div className="ap-sub">{ctxPost ? `Post ${ctxPost.id}` : "Hover a post to target"}</div>
             <button className="ap-btn" onClick={() => setPetal(null)}>Close</button>
           </div>
-
-          {petal === "react" && (
-            <div className="ap-emojis">
-              {EMOJI_LIST.map(e => (
-                <button key={e} className="emoji-btn" onClick={() => handleEmojiClick(e)} title={`React ${e}`} aria-label={`React ${e}`}>{e}</button>
-              ))}
-            </div>
-          )}
 
           {petal === "comment" && (
             <form
@@ -636,23 +592,6 @@ export default function AssistantOrb() {
               <div className="ap-hint">Make a quick remix of the current post. Uses defaults.</div>
               <button className="ap-btn" onClick={() => { if (ctxPost) { bus.emit?.("post:remix", { id: ctxPost.id }); setPetal(null); } }}>
                 Remix 🎬
-              </button>
-            </div>
-          )}
-
-          {petal === "share" && (
-            <div className="ap-body">
-              <div className="ap-hint">Copy link to this post.</div>
-              <button
-                className="ap-btn"
-                onClick={async () => {
-                  if (!ctxPost) return;
-                  const url = `${location.origin}${location.pathname}#post-${ctxPost.id}`;
-                  try { await navigator.clipboard.writeText(url); setToast("Link copied"); setTimeout(() => setToast(""), 900); } catch {}
-                  setPetal(null);
-                }}
-              >
-                Copy Link ↗️
               </button>
             </div>
           )}
