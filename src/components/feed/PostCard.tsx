@@ -1,31 +1,39 @@
-// src/components/feed/PostCard.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import "./postcard.css";
 import type { Post } from "../../types";
 import bus from "../../lib/bus";
 import { ensureModelViewer } from "../../lib/ensureModelViewer";
 
+// tiny helper
 const isBlob = (u?: string | null) => !!u && u.startsWith("blob:");
 
+/**
+ * PostCard (mobile-first, frosted-glass)
+ * - Clean top glass info bar
+ * - Bottom glass bar: avatar (left) + 4 icon-only actions (react / comment / remix / share)
+ * - Reaction opens in-card emoji drawer (uses same list style as Orb; no new files)
+ * - Comments live in the same drawer (simple input)
+ * - Media priority: PDF → 3D → Video → Images (interactive on mobile)
+ */
 export default function PostCard({ post }: { post: Post }) {
-  const [drawer, setDrawer] = useState(false);
+  const [drawer, setDrawer] = useState<null | "emoji" | "comments">(null);
   const [comments, setComments] = useState<string[]>([]);
   const [reactions, setReactions] = useState<string[]>([]);
 
   useEffect(() => {
     const off1 = bus.on?.("post:comment", ({ id, body }) => {
       if (String(id) !== String(post.id)) return;
-      setDrawer(true);
+      setDrawer("comments");
       setComments((s) => [body, ...s]);
     });
     const off2 = bus.on?.("post:react", ({ id, emoji }) => {
       if (String(id) !== String(post.id)) return;
-      setDrawer(true);
-      setReactions((s) => [emoji, ...s].slice(0, 40));
+      setDrawer("emoji");
+      setReactions((s) => [emoji, ...s].slice(0, 60));
     });
     const off3 = bus.on?.("post:focus", ({ id }) => {
       if (String(id) !== String(post.id)) return;
-      setDrawer(true);
+      setDrawer("comments");
     });
     return () => {
       try { off1?.(); } catch {}
@@ -76,20 +84,27 @@ export default function PostCard({ post }: { post: Post }) {
   const gridImages = images.slice(0, 4);
   const extra = imgCount > 4 ? imgCount - 4 : 0;
 
+  // emoji list (mirrors Assistant orb feel; kept local to avoid new files)
+  const EMOJI_LIST: string[] = [
+    "🤗","😂","🤣","😅","🙂","😉","😍","😎","🥳","🤯","😡","😱","🤔","🤭","🙄","🥺","🤪","🤫","🤤","😴",
+    "👻","🤖","👽","😈","👋","👍","👎","👏","🙏","👀","💪","🫶","💅","🔥","✨","⚡","💥","❤️","🫠","🫡",
+    "💙","💜","🖤","🤍","❤️‍🔥","❤️‍🩹","💯","💬","🗯️","🎉","🎊","🎁","🏆","🎮","🚀","✈️","🚗","🏠","🫨","🗿",
+    "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩"
+  ];
+
   return (
     <article
       className={`pc ${drawer ? "dopen" : ""}`}
       data-post-id={String(post?.id || "")}
       id={`post-${post.id}`}
     >
-      <div className="pc-badge" aria-hidden />
-
+      {/* media wrapper */}
       <div className={`pc-media ${imgCount > 1 && !video && !pdf && !model3d ? "has-grid" : ""}`}>
         {/* Priority: PDF → 3D → Video → Images */}
         {pdf ? (
           <iframe
             src={pdf}
-            title="PDF preview"
+            title="PDF"
             onLoad={onMediaReady}
             style={{ opacity: 0 }}
           />
@@ -141,7 +156,7 @@ export default function PostCard({ post }: { post: Post }) {
           />
         )}
 
-        {/* Topbar */}
+        {/* Top frosted info bar (clean) */}
         <div className="pc-topbar">
           <div className="pc-ava" title={post?.author}>
             <img
@@ -158,25 +173,42 @@ export default function PostCard({ post }: { post: Post }) {
           {post?.title && <div className="pc-title">{post.title}</div>}
         </div>
 
-        {/* Bottom bar: icon‑only (React / Comment / Remix / Share / Profile) */}
+        {/* Bottom frosted bar: avatar (left) + 4 icons (right) */}
         <div className="pc-botbar">
+          <div
+            className="pc-ava pc-ava-bottom"
+            title={`View ${post?.author}'s profile`}
+            onClick={() => bus.emit?.("profile:open", { id: post.author })}
+            role="button"
+          >
+            <img
+              src={post?.authorAvatar || "/avatar.jpg"}
+              alt={post?.author || "user"}
+            />
+          </div>
+
           <div className="pc-actions">
+            {/* React → open emoji drawer */}
             <button
               className="pc-act"
               title="React"
               aria-label="React"
-              onClick={() => setDrawer((v) => !v)}
+              onClick={() => setDrawer(d => (d === "emoji" ? null : "emoji"))}
             >
               <span className="ico react" />
             </button>
+
+            {/* Comment → open comments drawer */}
             <button
               className="pc-act"
               title="Comment"
               aria-label="Comment"
-              onClick={() => setDrawer((v) => !v)}
+              onClick={() => setDrawer(d => (d === "comments" ? null : "comments"))}
             >
               <span className="ico comment" />
             </button>
+
+            {/* Remix (emit, keeps layout) */}
             <button
               className="pc-act"
               title="Remix"
@@ -185,87 +217,96 @@ export default function PostCard({ post }: { post: Post }) {
             >
               <span className="ico remix" />
             </button>
+
+            {/* Share (copy link) */}
             <button
               className="pc-act"
               title="Share"
               aria-label="Share"
               onClick={async () => {
-                if (
-                  typeof location !== "undefined" &&
-                  typeof navigator !== "undefined" &&
-                  typeof navigator.clipboard !== "undefined" &&
-                  typeof navigator.clipboard.writeText === "function"
-                ) {
-                  const url = `${location.origin}${location.pathname}#post-${post.id}`;
-                  try {
-                    await navigator.clipboard.writeText(url);
-                  } catch {}
-                } else {
-                  try {
-                    console.warn?.("Clipboard not available");
-                  } catch {}
-                }
+                if (typeof location === "undefined") return;
+                const url = `${location.origin}${location.pathname}#post-${post.id}`;
+                try {
+                  await navigator.clipboard.writeText(url);
+                } catch {}
               }}
             >
               <span className="ico share" />
-            </button>
-            <button
-              className="pc-act"
-              title="Profile"
-              aria-label="Profile"
-              onClick={() => bus.emit?.("profile:open", { id: post.author })}
-            >
-              <span className="ico profile" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Drawer */}
+      {/* Drawer (frosted, inside-card) */}
       <div className="pc-drawer">
-        <div style={{ padding: "12px 18px 0" }}>
-          <strong>Reactions</strong>
-          <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {reactions.length ? (
-              reactions.map((e, i) => (
-                <span key={i} style={{ fontSize: 20 }}>{e}</span>
-              ))
-            ) : (
-              <span style={{ opacity: 0.7 }}>—</span>
+        {/* Emoji picker */}
+        {drawer === "emoji" && (
+          <div className="pc-emoji">
+            <div className="pc-emoji-grid" role="listbox" aria-label="Reactions">
+              {EMOJI_LIST.map((e, i) => (
+                <button
+                  key={`${e}-${i}`}
+                  className="pc-emoji-btn"
+                  onClick={() => {
+                    setReactions((s) => [e, ...s].slice(0, 60));
+                    bus.emit?.("post:react", { id: post.id, emoji: e });
+                  }}
+                  aria-label={`React ${e}`}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+            {reactions.length > 0 && (
+              <div className="pc-recent">
+                <strong>Recent</strong>
+                <div className="pc-recent-row">
+                  {reactions.slice(0, 12).map((e, i) => (
+                    <span key={`r-${i}`} className="pc-recent-emoji">{e}</span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
-        </div>
-        <div style={{ padding: "12px 18px" }}>
-          <strong>Comments</strong>
-          {comments.length ? (
-            <ul
-              style={{
-                margin: "8px 0 0",
-                padding: 0,
-                listStyle: "none",
-                display: "grid",
-                gap: 6,
+        )}
+
+        {/* Comments */}
+        {drawer === "comments" && (
+          <div className="pc-comments">
+            <form
+              className="pc-comment-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const input = e.currentTarget.elements.namedItem("cmt") as HTMLInputElement;
+                const t = input.value.trim();
+                if (!t) return;
+                setComments((s) => [t, ...s]);
+                bus.emit?.("post:comment", { id: post.id, body: t });
+                input.value = "";
               }}
             >
-              {comments.map((c, i) => (
-                <li
-                  key={i}
-                  style={{
-                    opacity: 0.95,
-                    background: "rgba(255,255,255,.06)",
-                    border: "1px solid rgba(255,255,255,.12)",
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                  }}
-                >
-                  {c}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div style={{ opacity: 0.7, marginTop: 8 }}>—</div>
-          )}
-        </div>
+              <input
+                name="cmt"
+                className="pc-comment-input"
+                placeholder="Write a comment…"
+                autoComplete="off"
+              />
+              <button className="pc-comment-send" type="submit">Send</button>
+            </form>
+
+            <div className="pc-comment-list">
+              {comments.length ? (
+                <ul>
+                  {comments.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="pc-comment-empty">No comments yet — be first.</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </article>
   );
