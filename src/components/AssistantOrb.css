@@ -1,3 +1,13 @@
+
+:root {
+  --orb-bg: radial-gradient(
+    120% 120% at 30% 30%,
+    #fff,
+    var(--orb-surface) 60%,
+    var(--orb-color)
+  );
+}
+
 .assistant-orb {
   position: fixed;
   width: var(--orb-size);
@@ -9,7 +19,7 @@
   cursor: grab;
   overflow: hidden;
   background: var(--orb-bg);
-  box-shadow: var(--orb-shadow);
+  box-shadow: var(--orb-shadow), 0 0 0 8px var(--orb-ring);
   backdrop-filter: blur(14px) saturate(140%);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
   touch-action: none;
@@ -30,10 +40,11 @@
   border-radius: 50%;
   background: radial-gradient(
     60% 60% at 40% 35%,
-    rgba(255, 255, 255, 0.95),
-    rgba(255, 255, 255, 0.3) 65%,
+    color-mix(in srgb, #fff 95%, var(--orb-color) 5%),
+    color-mix(in srgb, #fff 30%, var(--orb-color) 70%) 65%,
     transparent 70%
   );
+  transition: background 0.3s ease, transform 0.3s ease;
 }
 
 .assistant-orb__ring {
@@ -42,6 +53,7 @@
   border-radius: 50%;
   box-shadow: inset 0 0 24px var(--orb-ring);
   filter: blur(4px);
+  transition: box-shadow 0.3s ease;
 }
 
 .assistant-orb.mic .assistant-orb__ring {
@@ -67,6 +79,7 @@
   color: #fff;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .assistant-orb__toast.right {
