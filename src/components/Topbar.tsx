@@ -1,8 +1,16 @@
-import React, { useLayoutEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef, useState, useEffect } from "react";
 import bus from "../lib/bus";
 
 export default function Topbar() {
   const ref = useRef<HTMLElement | null>(null);
+  const [theme, setTheme] = useState(() =>
+    localStorage.getItem("theme") || "dark"
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   useLayoutEffect(() => {
     const el = ref.current!;
@@ -33,6 +41,15 @@ export default function Topbar() {
       <div className="topbar-title">superNova_2177</div>
 
       <div style={{ display: "flex", gap: 8 }}>
+        <button
+          className="topbar-menu-btn"
+          onClick={() =>
+            setTheme(theme === "dark" ? "light" : "dark")
+          }
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
         <button
           className="topbar-menu-btn"
           onClick={() => bus.emit("sidebar:toggle")}
