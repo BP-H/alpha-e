@@ -1,3 +1,4 @@
+// src/components/RadialMenu.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import "./RadialMenu.css";
@@ -39,13 +40,14 @@ type FullProps = {
 /** Union of both modes */
 type RadialMenuProps = SimpleProps | FullProps;
 
+/** Type guard to narrow to SimpleProps at runtime */
 function isSimpleProps(p: RadialMenuProps): p is SimpleProps {
   return Array.isArray((p as any).items);
 }
 
 export default function RadialMenu(props: RadialMenuProps) {
   // If `items` is present, render the lightweight menu (Simple mode)
-  if ("items" in props) {
+  if (isSimpleProps(props)) {
     return (
       <SimpleRadialMenu
         center={props.center}
@@ -423,11 +425,7 @@ export default function RadialMenu(props: RadialMenuProps) {
 }
 
 /** Lightweight radial menu used by PortalOrb */
-function SimpleRadialMenu({
-  center,
-  items,
-  onClose,
-}: SimpleProps) {
+function SimpleRadialMenu({ center, items, onClose }: SimpleProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [index, setIndex] = useState(0);
