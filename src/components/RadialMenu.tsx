@@ -152,7 +152,8 @@ export default function RadialMenu({
     );
   }
 
-  const rootAngles = [-90, 230, 310, 180];
+  // evenly spaced around the circle for a more logical layout
+  const rootAngles = [-90, 0, 90, 180];
   const reactAngles = reactItems.map((_, i) => (360 / reactItems.length) * i - 90);
   const createAngles = createItems.map((_, i) => (360 / createItems.length) * i - 90);
 
@@ -167,8 +168,24 @@ export default function RadialMenu({
       aria-activedescendant={`assistant-menu-item-${activeId}`}
       style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
     >
-      {rootItems.map((item, i) =>
-        renderItem(item, i, rootAngles[i], step === "root" && i === index, 74)
+      {step === "root" &&
+        rootItems.map((item, i) =>
+          renderItem(item, i, rootAngles[i], i === index, 74)
+        )}
+      {step !== "root" && (
+        <button
+          id="assistant-menu-item-back"
+          role="menuitem"
+          tabIndex={-1}
+          aria-label="Back"
+          style={{ ...rbtn, left: -20, top: -20 }}
+          onClick={() => {
+            setStep("root");
+            setIndex(0);
+          }}
+        >
+          ⬅️
+        </button>
       )}
       {step === "react" &&
         reactItems.map((item, i) =>
