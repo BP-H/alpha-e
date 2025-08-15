@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import usePointer from "../hooks/usePointer";
 
 type Props = {
   onAnalyzeImage: (imgUrl: string) => void;
@@ -13,8 +14,8 @@ const MOVE_TOLERANCE = 8;
 export default function PortalOrb({ onAnalyzeImage }: Props) {
   const orbRef = useRef<HTMLDivElement>(null);
   const holdRef = useRef<number | null>(null);
-  const moveRef = useRef<(ev: PointerEvent) => void>();
-  const upRef = useRef<(ev: PointerEvent) => void>();
+  const startRef = useRef({ x: 0, y: 0 });
+  const originRef = useRef({ x: 0, y: 0 });
   const [mode, setMode] = useState<Mode>("idle");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -64,10 +65,8 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
     lastTap.current = now;
 
     setDragging(true);
-    const startX = e.clientX - pos.x;
-    const startY = e.clientY - pos.y;
-    const originX = e.clientX;
-    const originY = e.clientY;
+    startRef.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    originRef.current = { x: e.clientX, y: e.clientY };
 
     // long-press => open radial menu
     holdRef.current = window.setTimeout(() => {
@@ -75,72 +74,64 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
       setMode("menu");
       orbRef.current?.classList.add("grow");
     }, HOLD_MS);
-
-    function move(ev: PointerEvent) {
-      if (!dragging) return;
-      const next = withinSafe(ev.clientX - startX, ev.clientY - startY);
-      setPos(next);
-      if (
-        holdRef.current &&
-        Math.hypot(ev.clientX - originX, ev.clientY - originY) > MOVE_TOLERANCE
-      ) {
-        clearTimeout(holdRef.current);
-        holdRef.current = null;
-      }
-    }
-    moveRef.current = move;
-
-    function up(ev: PointerEvent) {
-      setDragging(false);
-      if (holdRef.current) {
-        clearTimeout(holdRef.current);
-        holdRef.current = null;
-      }
-
-      // If we were in analyze mode, try to capture the thing under the orb
-      if (mode === "analyze") {
-        const el = document.elementFromPoint(ev.clientX, ev.clientY) as
-          | HTMLElement
-          | null;
-        const url = el?.closest("[data-asset]")?.getAttribute("data-asset");
-        if (url) onAnalyzeImage(url);
-        setMode("idle");
-        setMenuOpen(false);
-        teardownAnalyzeOverlay();
-      }
-
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      moveRef.current = undefined;
-      upRef.current = undefined;
-    }
-    upRef.current = up;
-
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
   }
 
-  function handlePointerCancel(e: React.PointerEvent) {
-    try {
-      (e.currentTarget as Element).releasePointerCapture(e.pointerId);
-    } catch {}
+  function handlePointerMove(ev: PointerEvent) {
+    if (!dragging) return;
+    const next = withinSafe(
+      ev.clientX - startRef.current.x,
+      ev.clientY - startRef.current.y
+    );
+    setPos(next);
+    if (
+      holdRef.current &&
+      Math.hypot(
+        ev.clientX - originRef.current.x,
+        ev.clientY - originRef.current.y
+      ) > MOVE_TOLERANCE
+    ) {
+      clearTimeout(holdRef.current);
+      holdRef.current = null;
+    }
+    if (mode === "analyze" && analyzeOverlay.current) {
+      analyzeOverlay.current.style.setProperty("--x", `${ev.clientX}px`);
+      analyzeOverlay.current.style.setProperty("--y", `${ev.clientY}px`);
+    }
+  }
+
+  function finishInteraction(ev: PointerEvent, canceled = false) {
     setDragging(false);
     if (holdRef.current) {
       clearTimeout(holdRef.current);
       holdRef.current = null;
     }
-    if (moveRef.current) {
-      window.removeEventListener("pointermove", moveRef.current);
-      moveRef.current = undefined;
+    try {
+      orbRef.current?.releasePointerCapture(ev.pointerId);
+    } catch {}
+
+    if (mode === "analyze") {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY) as
+        | HTMLElement
+        | null;
+      const url = el?.closest("[data-asset]")?.getAttribute("data-asset");
+      if (url) onAnalyzeImage(url);
+      setMode("idle");
+      setMenuOpen(false);
+      teardownAnalyzeOverlay();
+    } else if (canceled) {
+      setMode("idle");
+      setMenuOpen(false);
+      orbRef.current?.classList.remove("grow");
+      teardownAnalyzeOverlay();
     }
-    if (upRef.current) {
-      window.removeEventListener("pointerup", upRef.current);
-      upRef.current = undefined;
-    }
-    setMode("idle");
-    setMenuOpen(false);
-    orbRef.current?.classList.remove("grow");
-    teardownAnalyzeOverlay();
+  }
+
+  function handlePointerUp(ev: PointerEvent) {
+    finishInteraction(ev);
+  }
+
+  function handlePointerCancel(e: React.PointerEvent) {
+    finishInteraction(e.nativeEvent, true);
   }
 
   function startAnalyze() {
@@ -278,11 +269,10 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
     }
   }, [menuOpen]);
 
-  function onPointerMoveForOverlay(e: React.PointerEvent) {
-    if (mode !== "analyze" || !analyzeOverlay.current) return;
-    analyzeOverlay.current.style.setProperty("--x", `${e.clientX}px`);
-    analyzeOverlay.current.style.setProperty("--y", `${e.clientY}px`);
-  }
+  usePointer(dragging, {
+    onMove: handlePointerMove,
+    onUp: handlePointerUp,
+  });
 
   return (
     <>
@@ -293,7 +283,6 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
         }`}
         onPointerDown={handlePointerDown}
         onPointerCancel={handlePointerCancel}
-        onPointerMove={onPointerMoveForOverlay}
         role="button"
         tabIndex={0}
         aria-label="AI Portal"
