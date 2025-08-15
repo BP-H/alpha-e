@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import usePointer from "../hooks/usePointer";
+import bus from "../lib/bus";
 
 type Props = {
   onAnalyzeImage: (imgUrl: string) => void;
@@ -202,10 +203,10 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
       ),
       label: "Compose",
       callback: () => {
+        setMode("idle");
         setMenuOpen(false);
         orbRef.current?.classList.remove("grow");
-        // placeholder “compose” action
-        alert("Compose: hook this to your AI API.");
+        bus.emit("compose");
       },
     },
     {
