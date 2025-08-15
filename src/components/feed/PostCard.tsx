@@ -3,6 +3,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./postcard.css";
 import type { Post } from "../../types";
 import bus from "../../lib/bus";
+import { ensureModelViewer } from "../../lib/ensureModelViewer";
+
+const isBlob = (u?: string | null) => !!u && u.startsWith("blob:");
 
 export default function PostCard({ post }: { post: Post }) {
   const [drawer, setDrawer] = useState(false);
@@ -31,8 +34,14 @@ export default function PostCard({ post }: { post: Post }) {
     };
   }, [post.id]);
 
-  const isBlob = (u?: string | null) =>
-    typeof u === "string" && u.startsWith("blob:");
+  // media selection
+  const pdf = (post as any)?.pdf as string | undefined;
+  const model3d = (post as any)?.model3d as string | undefined;
+  const video = (post as any)?.video as string | undefined;
+
+  useEffect(() => {
+    if (model3d) { ensureModelViewer().catch(() => {}); }
+  }, [model3d]);
 
   // Build image list (images[] preferred, else image/cover, else fallback)
   const images = useMemo(() => {
@@ -47,16 +56,12 @@ export default function PostCard({ post }: { post: Post }) {
       if (typeof img === "string") out.push(img);
       else if (img.url) out.push(String(img.url));
     }
-    if (!out.length) out.push("/vite.svg");
+    if (!out.length && !video && !pdf && !model3d) out.push("/vite.svg");
     return out;
-  }, [post]);
+  }, [post, video, pdf, model3d]);
 
-  const [imgIndex, setImgIndex] = useState(0);
-  useEffect(() => { setImgIndex(0); }, [images]);
-
-  const pdf = (post as any)?.pdf as string | undefined;
-  const model3d = (post as any)?.model3d as string | undefined;
-  const video = (post as any)?.video as string | undefined;
+  const [imgReady, setImgReady] = useState<Record<number, boolean>>({});
+  const onImgLoad = (i: number) => setImgReady((s) => ({ ...s, [i]: true }));
 
   const onMediaReady = (e: React.SyntheticEvent<any>) => {
     const el = e.currentTarget as any;
@@ -67,6 +72,10 @@ export default function PostCard({ post }: { post: Post }) {
     }
   };
 
+  const imgCount = images.length;
+  const gridImages = images.slice(0, 4);
+  const extra = imgCount > 4 ? imgCount - 4 : 0;
+
   return (
     <article
       className={`pc ${drawer ? "dopen" : ""}`}
@@ -74,8 +83,9 @@ export default function PostCard({ post }: { post: Post }) {
       id={`post-${post.id}`}
     >
       <div className="pc-badge" aria-hidden />
-      <div className="pc-media">
-        {/* Primary media: PDF → 3D → Video → Images (carousel) */}
+
+      <div className={`pc-media ${imgCount > 1 && !video && !pdf && !model3d ? "has-grid" : ""}`}>
+        {/* Priority: PDF → 3D → Video → Images */}
         {pdf ? (
           <iframe
             src={pdf}
@@ -98,55 +108,37 @@ export default function PostCard({ post }: { post: Post }) {
             preload="metadata"
             crossOrigin={isBlob(video) ? undefined : "anonymous"}
             onLoadedData={onMediaReady}
+            style={{ opacity: 0, pointerEvents: "auto" }}
+          />
+        ) : imgCount > 1 ? (
+          <>
+            <div className={`pc-gallery pc-n${Math.min(4, imgCount)}`}>
+              {gridImages.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt={post?.title || post?.author || "post"}
+                  loading="lazy"
+                  crossOrigin={isBlob(src) ? undefined : "anonymous"}
+                  className={`pc-tile ${imgReady[i] ? "ready" : ""}`}
+                  onLoad={() => onImgLoad(i)}
+                />
+              ))}
+            </div>
+            {extra > 0 && <div className="pc-more">+{extra}</div>}
+          </>
+        ) : (
+          <img
+            src={images[0]}
+            alt={post?.title || post?.author || "post"}
+            loading="lazy"
+            crossOrigin={isBlob(images[0]) ? undefined : "anonymous"}
+            onLoad={onMediaReady}
             style={{ opacity: 0 }}
           />
-        ) : (
-          <>
-            {images.map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                alt={post?.title || post?.author || "post"}
-                loading="lazy"
-                crossOrigin={isBlob(src) ? undefined : "anonymous"}
-                onLoad={onMediaReady}
-                className={i === imgIndex ? "active" : ""}
-                style={{ display: i === imgIndex ? "block" : "none", opacity: 0 }}
-              />
-            ))}
-            {images.length > 1 && (
-              <>
-                <button
-                  className="pc-nav prev"
-                  onClick={() =>
-                    setImgIndex((i) => (i - 1 + images.length) % images.length)
-                  }
-                  aria-label="Previous image"
-                >
-                  ‹
-                </button>
-                <button
-                  className="pc-nav next"
-                  onClick={() => setImgIndex((i) => (i + 1) % images.length)}
-                  aria-label="Next image"
-                >
-                  ›
-                </button>
-                <div className="pc-dots">
-                  {images.map((_, i) => (
-                    <button
-                      key={i}
-                      className={i === imgIndex ? "on" : ""}
-                      onClick={() => setImgIndex(i)}
-                      aria-label={`View image ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </>
         )}
 
+        {/* Topbar */}
         <div className="pc-topbar">
           <div className="pc-ava" title={post?.author}>
             <img
@@ -163,46 +155,64 @@ export default function PostCard({ post }: { post: Post }) {
           {post?.title && <div className="pc-title">{post.title}</div>}
         </div>
 
-        {/* Icon-only actions: profile (avatar), engage(heart), comment, world, remix */}
+        {/* Bottom bar: icon‑only (React / Comment / Remix / Share / Profile) */}
         <div className="pc-botbar">
           <div className="pc-actions">
-            {/* author profile chip */}
-            <button className="pc-act profile" title="Profile" onClick={() => bus.emit?.("profile:open", { id: post?.author })}>
-              <span className="ico" aria-hidden />
+            <button
+              className="pc-act"
+              title="React"
+              aria-label="React"
+              onClick={() => setDrawer((v) => !v)}
+            >
+              <span className="ico react" />
             </button>
-
-            {/* engage (heart) */}
-            <button className="pc-act" title="Engage" onClick={() => bus.emit?.("post:react", { id: post.id, emoji: "❤️" })}>
-              <span className="ico heart" />
-            </button>
-
-            {/* comment */}
-            <button className="pc-act" title="Comment" onClick={() => setDrawer((v) => !v)}>
+            <button
+              className="pc-act"
+              title="Comment"
+              aria-label="Comment"
+              onClick={() => setDrawer((v) => !v)}
+            >
               <span className="ico comment" />
             </button>
-
-            {/* world / portal */}
-            <button className="pc-act" title="World" onClick={() => bus.emit?.("orb:portal", { post, x: 0, y: 0 })}>
-              <span className="ico world" />
+            <button
+              className="pc-act"
+              title="Remix"
+              aria-label="Remix"
+              onClick={() => bus.emit?.("post:remix", { id: post.id })}
+            >
+              <span className="ico remix" />
             </button>
-
-            {/* remix (uses simple emoji icon so we don't need new mask CSS) */}
-            <button className="pc-act" title="Remix" onClick={() => bus.emit?.("post:remix", { id: post.id })}>
-              <span style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>🎬</span>
+            <button
+              className="pc-act"
+              title="Share"
+              aria-label="Share"
+              onClick={async () => {
+                const url = `${location.origin}${location.pathname}#post-${post.id}`;
+                try { await navigator.clipboard.writeText(url); } catch {}
+              }}
+            >
+              <span className="ico share" />
+            </button>
+            <button
+              className="pc-act"
+              title="Profile"
+              aria-label="Profile"
+              onClick={() => bus.emit?.("profile:open", { id: post.author })}
+            >
+              <span className="ico profile" />
             </button>
           </div>
         </div>
       </div>
 
+      {/* Drawer */}
       <div className="pc-drawer">
         <div style={{ padding: "12px 18px 0" }}>
           <strong>Reactions</strong>
           <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
             {reactions.length ? (
               reactions.map((e, i) => (
-                <span key={i} style={{ fontSize: 20 }}>
-                  {e}
-                </span>
+                <span key={i} style={{ fontSize: 20 }}>{e}</span>
               ))
             ) : (
               <span style={{ opacity: 0.7 }}>—</span>
