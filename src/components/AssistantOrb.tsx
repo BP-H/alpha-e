@@ -410,7 +410,15 @@ export default function AssistantOrb() {
       applyTransform(nx, ny);
       updateAnchors();
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setMenuOpen(false); setPetal(null); stopListening(); } };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setMenuOpen(false);
+        setPetal(null);
+        stopListening();
+        orbRef.current?.focus();
+      }
+    };
 
     window.addEventListener("resize", onResize);
     window.addEventListener("keydown", onKey);
@@ -457,6 +465,11 @@ export default function AssistantOrb() {
   const ringStyle: React.CSSProperties = {
     position: "absolute", inset: -6, borderRadius: 999, pointerEvents: "none",
   };
+  const overlayStyle: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    zIndex: 9997,
+  };
   const toastBoxStyle: React.CSSProperties = {
     position: "fixed",
     background: "rgba(0,0,0,.7)",
@@ -502,6 +515,7 @@ export default function AssistantOrb() {
       setPetal("share"); setMenuOpen(false);
     } else if (e.key === "Escape") {
       setMenuOpen(false); setPetal(null); stopListening();
+      orbRef.current?.focus();
     }
   }
 
@@ -524,8 +538,6 @@ export default function AssistantOrb() {
         onLostPointerCapture={onLostPointerCapture}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        onMouseEnter={() => { setMenuOpen(true); requestAnimationFrame(updateAnchors); }}
-        onMouseLeave={() => { if (!dragging) setMenuOpen(false); }}
         onKeyDown={handleOrbKeyDown}
       >
         <motion.div
@@ -544,38 +556,51 @@ export default function AssistantOrb() {
 
       {/* Radial menu */}
       {menuOpen && !dragging && (
-        <RadialMenu
-          center={{ x: pos.x + ORB_SIZE / 2, y: pos.y + ORB_SIZE / 2 }}
-          onClose={() => setMenuOpen(false)}
-          onChat={() => {
-            setOpen(v => !v);
-            setPetal(null);
-            setMenuOpen(false);
-            requestAnimationFrame(updateAnchors);
-          }}
-          onReact={(e) => {
-            handleEmojiClick(e);
-            setMenuOpen(false);
-          }}
-          onComment={() => {
-            setPetal("comment");
-            setMenuOpen(false);
-          }}
-          onRemix={() => {
-            setPetal("remix");
-            setMenuOpen(false);
-          }}
-          onShare={() => {
-            setPetal("share");
-            setMenuOpen(false);
-          }}
-          onProfile={() => {
-            if (ctxPost) bus.emit?.("profile:open", { id: ctxPost.author });
-            setMenuOpen(false);
-          }}
-          avatarUrl={ctxPost?.authorAvatar || "/avatar.jpg"}
-          emojis={EMOJI_LIST.slice(0, 8)}
-        />
+        <>
+          <div
+            style={overlayStyle}
+            onClick={() => {
+              setMenuOpen(false);
+              setPetal(null);
+              orbRef.current?.focus();
+            }}
+          />
+          <RadialMenu
+            center={{ x: pos.x + ORB_SIZE / 2, y: pos.y + ORB_SIZE / 2 }}
+            onClose={() => {
+              setMenuOpen(false);
+              orbRef.current?.focus();
+            }}
+            onChat={() => {
+              setOpen(v => !v);
+              setPetal(null);
+              setMenuOpen(false);
+              requestAnimationFrame(updateAnchors);
+            }}
+            onReact={(e) => {
+              handleEmojiClick(e);
+              setMenuOpen(false);
+            }}
+            onComment={() => {
+              setPetal("comment");
+              setMenuOpen(false);
+            }}
+            onRemix={() => {
+              setPetal("remix");
+              setMenuOpen(false);
+            }}
+            onShare={() => {
+              setPetal("share");
+              setMenuOpen(false);
+            }}
+            onProfile={() => {
+              if (ctxPost) bus.emit?.("profile:open", { id: ctxPost.author });
+              setMenuOpen(false);
+            }}
+            avatarUrl={ctxPost?.authorAvatar || "/avatar.jpg"}
+            emojis={EMOJI_LIST.slice(0, 8)}
+          />
+        </>
       )}
 
       {/* toast + interim */}
