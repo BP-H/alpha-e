@@ -2,43 +2,79 @@ import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import "./RadialMenu.css";
 
-interface RadialMenuProps {
+/** A simple radial item (used by the lightweight menu mode) */
+export type RadialMenuItem = {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  action: () => void;
+};
+
+/** Simple mode: used by PortalOrb — just supply items and onClose */
+type SimpleProps = {
   center: { x: number; y: number };
   onClose: () => void;
+  items: RadialMenuItem[];
+};
+
+/** Full mode: used by the Assistant orb — full callback surface */
+type FullProps = {
+  center: { x: number; y: number };
+  onClose: () => void;
+
   onChat: () => void;
   onReact: (emoji: string) => void;
   onComment: () => void;
   onRemix: () => void;
   onShare: () => void;
   onProfile: () => void;
+
   avatarUrl: string;
   emojis: string[];
-  items?: { id: string; label: string; icon: React.ReactNode; action: () => void }[];
-}
 
-export default function RadialMenu({
-  center,
-  onClose,
-  onChat,
-  onReact,
-  onComment,
-  onRemix,
-  onShare,
-  onProfile,
-  avatarUrl,
-  emojis,
-  items,
-}: RadialMenuProps) {
-  if (items && items.length) {
-    return <SimpleRadialMenu center={center} items={items} onClose={onClose} />;
+  // Prevent mixing with simple mode accidentally
+  items?: never;
+};
+
+/** Union of both modes */
+type RadialMenuProps = SimpleProps | FullProps;
+
+export default function RadialMenu(props: RadialMenuProps) {
+  // If `items` is present, render the lightweight menu (Simple mode)
+  if ("items" in props) {
+    return (
+      <SimpleRadialMenu
+        center={props.center}
+        items={props.items}
+        onClose={props.onClose}
+      />
+    );
   }
 
+  // Full mode (Assistant orb)
+  const {
+    center,
+    onClose,
+    onChat,
+    onReact,
+    onComment,
+    onRemix,
+    onShare,
+    onProfile,
+    avatarUrl,
+    emojis,
+  } = props;
+
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [step, setStep] = useState<"root" | "react" | "react-all" | "create">("root");
+  const [step, setStep] = useState<"root" | "react" | "react-all" | "create">(
+    "root"
+  );
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
-  const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
+  // Clamp the visual origin into the viewport & rotate the ring near edges
+  const [origin, setOrigin] = useState(center);
+  const [angleOffset, setAngleOffset] = useState(0);
 
   useEffect(() => {
     menuRef.current?.focus();
@@ -46,11 +82,56 @@ export default function RadialMenu({
     setIndex(0);
   }, []);
 
+  const rootRadius = 74;
+  const subRadius = 120;
+
+  const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const radius = step === "root" ? rootRadius : subRadius;
+    const pad = radius + 20; // button radius + margin
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Clamp origin
+    const cx = clamp(center.x, pad, vw - pad);
+    const cy = clamp(center.y, pad, vh - pad);
+    setOrigin({ x: cx, y: cy });
+
+    // Compute a rotation so items don't land off-screen
+    const nearLeft = center.x < pad;
+    const nearRight = center.x > vw - pad;
+    const nearTop = center.y < pad;
+    const nearBottom = center.y > vh - pad;
+
+    let rot = 0;
+    if (nearLeft && nearTop) rot = 135;
+    else if (nearLeft && nearBottom) rot = 45;
+    else if (nearRight && nearTop) rot = -135;
+    else if (nearRight && nearBottom) rot = -45;
+    else if (nearLeft) rot = 90;
+    else if (nearRight) rot = -90;
+    else if (nearTop) rot = 180;
+    else rot = 0;
+
+    setAngleOffset(rot);
+  }, [center, step]);
+
   const PAGE_SIZE = 8;
 
   const menuConfig = {
     root: [
-      { id: "chat", label: "Chat", icon: "💬", action: () => { onChat(); onClose(); } },
+      {
+        id: "chat",
+        label: "Chat",
+        icon: "💬",
+        action: () => {
+          onChat();
+          onClose();
+        },
+      },
       { id: "react", label: "React", icon: "👏", next: "react" as const },
       { id: "create", label: "Create", icon: "✍️", next: "create" as const },
       {
@@ -88,12 +169,41 @@ export default function RadialMenu({
         onClose();
       },
     })),
+    moreReact: {
+      id: "more",
+      label: "More reactions",
+      icon: "…",
+      next: "react-all" as const,
+    },
     create: [
-      { id: "comment", label: "Comment", icon: "✍️", action: () => { onComment(); onClose(); } },
-      { id: "remix", label: "Remix", icon: "🎬", action: () => { onRemix(); onClose(); } },
-      { id: "share", label: "Share", icon: "↗️", action: () => { onShare(); onClose(); } },
+      {
+        id: "comment",
+        label: "Comment",
+        icon: "✍️",
+        action: () => {
+          onComment();
+          onClose();
+        },
+      },
+      {
+        id: "remix",
+        label: "Remix",
+        icon: "🎬",
+        action: () => {
+          onRemix();
+          onClose();
+        },
+      },
+      {
+        id: "share",
+        label: "Share",
+        icon: "↗️",
+        action: () => {
+          onShare();
+          onClose();
+        },
+      },
     ],
-    moreReact: { id: "more", label: "More reactions", icon: "…", next: "react-all" as const },
   } as const;
 
   const rootItems = menuConfig.root;
@@ -105,7 +215,7 @@ export default function RadialMenu({
   const reactAllItems = menuConfig.reactAll;
   const createItems = menuConfig.create;
 
-  const currentItems =
+  const ringItems =
     step === "root"
       ? rootItems
       : step === "react"
@@ -114,30 +224,43 @@ export default function RadialMenu({
       ? reactAllItems
       : createItems;
 
+  const centerItem =
+    step === "root"
+      ? { id: "close", label: "Close menu", icon: "✖️", action: onClose }
+      : {
+          id: "back",
+          label: "Go back",
+          icon: "⬅️",
+          action: () => {
+            setStep("root");
+            setIndex(0);
+          },
+        };
+
+  // keyboard navigation includes the center control as the last virtual item
+  const currentItems = [...ringItems, centerItem];
+
   function handleKeyDown(e: React.KeyboardEvent) {
-    const totalItems = currentItems.length + 1; // include center control
+    const total = currentItems.length;
+
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      setIndex((index + 1) % totalItems);
+      setIndex((i) => (i + 1) % total);
     } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
-      setIndex((index - 1 + totalItems) % totalItems);
+      setIndex((i) => (i - 1 + total) % total);
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      if (index === currentItems.length) {
-        if (step === "root") {
-          onClose();
-        } else {
-          setStep("root");
-          setIndex(0);
-        }
+      const isCenter = index === ringItems.length;
+      if (isCenter) {
+        centerItem.action();
       } else {
-        const item = currentItems[index];
-        if ((item as any).next) {
-          setStep((item as any).next);
+        const item = ringItems[index] as any;
+        if (item.next) {
+          setStep(item.next);
           setIndex(0);
         } else {
-          (item as any).action();
+          item.action();
         }
       }
     } else if (e.key === "Escape") {
@@ -150,30 +273,9 @@ export default function RadialMenu({
       }
     }
   }
-  const rootRadius = 74;
-  const subRadius = 120;
-  const radius = step === "root" ? rootRadius : subRadius;
-  const { innerWidth: vw, innerHeight: vh } =
-    typeof window !== "undefined" ? window : ({ innerWidth: 0, innerHeight: 0 } as any);
-  const margin = 40;
-  const edgeLeft = center.x < radius + margin;
-  const edgeRight = center.x > vw - radius - margin;
-  const edgeTop = center.y < radius + margin;
-  const edgeBottom = center.y > vh - radius - margin;
-  const safeX = clamp(center.x, radius + margin, vw - radius - margin);
-  const safeY = clamp(center.y, radius + margin, vh - radius - margin);
-  const menuCenter = { x: safeX, y: safeY };
-  let angleOffset = 0;
-  if (edgeTop && edgeLeft) angleOffset = 135;
-  else if (edgeTop && edgeRight) angleOffset = -135;
-  else if (edgeBottom && edgeLeft) angleOffset = 45;
-  else if (edgeBottom && edgeRight) angleOffset = -45;
-  else if (edgeTop) angleOffset = 180;
-  else if (edgeBottom) angleOffset = 0;
-  else if (edgeLeft) angleOffset = 90;
-  else if (edgeRight) angleOffset = -90;
 
-  const angleFor = (i: number, len: number) => (360 / len) * i - 90 + angleOffset;
+  const angleFor = (i: number, len: number) =>
+    (360 / len) * i - 90 + angleOffset;
 
   function renderItem(
     item: any,
@@ -215,12 +317,8 @@ export default function RadialMenu({
           duration: reduceMotion ? 0 : 0.25,
           ease: [0.4, 0, 0.2, 1],
         }}
-        whileHover={
-          reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }
-        }
-        whileFocus={
-          reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }
-        }
+        whileHover={reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }}
+        whileFocus={reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }}
         onClick={() => {
           if (item.next) {
             setStep(item.next);
@@ -236,11 +334,11 @@ export default function RadialMenu({
   }
 
   const activeId =
-    index === currentItems.length
+    index === ringItems.length
       ? step === "root"
         ? "close"
         : "back"
-      : currentItems[index]?.id || "";
+      : ringItems[index]?.id || "";
 
   return (
     <div
@@ -249,22 +347,38 @@ export default function RadialMenu({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       aria-activedescendant={`assistant-menu-item-${activeId}`}
-      style={{ position: "fixed", left: menuCenter.x, top: menuCenter.y, width: 0, height: 0, zIndex: 9998 }}
+      style={{
+        position: "fixed",
+        left: origin.x,
+        top: origin.y,
+        width: 0,
+        height: 0,
+        zIndex: 9998,
+      }}
     >
-      {step === "root" && (
-        <AnimatePresence>
-          {rootItems.map((item, i) =>
-            renderItem(item, i, i === index, rootRadius, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
+      <AnimatePresence>
+        {ringItems.map((item, i) =>
+          renderItem(
+            item,
+            i,
+            i === index,
+            step === "root" ? rootRadius : subRadius,
+            ringItems.length
+          )
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         <motion.button
           key={step === "root" ? "close" : "back"}
-          id={step === "root" ? "assistant-menu-item-close" : "assistant-menu-item-back"}
+          id={
+            step === "root"
+              ? "assistant-menu-item-close"
+              : "assistant-menu-item-back"
+          }
           role="menuitem"
           tabIndex={-1}
-          aria-label={step === "root" ? "Close menu" : "Go back"}
+          aria-label={centerItem.label}
           className="rbtn"
           style={{ left: -20, top: -20 }}
           initial={
@@ -278,9 +392,7 @@ export default function RadialMenu({
             y: 0,
             scale: 1,
             boxShadow:
-              index === currentItems.length
-                ? "0 0 0 2px var(--rm-ring)"
-                : "none",
+              index === ringItems.length ? "0 0 0 2px var(--rm-ring)" : "none",
           }}
           exit={
             reduceMotion
@@ -297,52 +409,21 @@ export default function RadialMenu({
           whileFocus={
             reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }
           }
-          onClick={() => {
-            if (step === "root") {
-              onClose();
-            } else {
-              setStep("root");
-              setIndex(0);
-            }
-          }}
+          onClick={centerItem.action}
         >
           {step === "root" ? "✖️" : "⬅️"}
         </motion.button>
       </AnimatePresence>
-      {step === "react" && (
-        <AnimatePresence>
-          {reactItems.map((item, i) =>
-            renderItem(item, i, i === index, subRadius, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      {step === "react-all" && (
-        <AnimatePresence>
-          {reactAllItems.map((item, i) =>
-            renderItem(item, i, i === index, subRadius, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      {step === "create" && (
-        <AnimatePresence>
-          {createItems.map((item, i) =>
-            renderItem(item, i, i === index, subRadius, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
     </div>
   );
 }
 
+/** Lightweight radial menu used by PortalOrb */
 function SimpleRadialMenu({
   center,
   items,
   onClose,
-}: {
-  center: { x: number; y: number };
-  items: { id: string; label: string; icon: React.ReactNode; action: () => void }[];
-  onClose: () => void;
-}) {
+}: SimpleProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [index, setIndex] = useState(0);
@@ -353,14 +434,23 @@ function SimpleRadialMenu({
   }, []);
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "ArrowRight" || e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+    const len = items.length;
+    if (
+      e.key === "ArrowRight" ||
+      e.key === "ArrowDown" ||
+      (e.key === "Tab" && !e.shiftKey)
+    ) {
       e.preventDefault();
-      const next = (index + 1) % items.length;
+      const next = (index + 1) % len;
       setIndex(next);
       itemRefs.current[next]?.focus();
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+    } else if (
+      e.key === "ArrowLeft" ||
+      e.key === "ArrowUp" ||
+      (e.key === "Tab" && e.shiftKey)
+    ) {
       e.preventDefault();
-      const next = (index - 1 + items.length) % items.length;
+      const next = (index - 1 + len) % len;
       setIndex(next);
       itemRefs.current[next]?.focus();
     } else if (e.key === "Escape") {
@@ -380,9 +470,12 @@ function SimpleRadialMenu({
       onKeyDown={handleKeyDown}
       aria-activedescendant={`simple-radial-item-${items[index]?.id}`}
       style={{
-        position: "absolute",
+        position: "fixed",
         left: center.x,
         top: center.y,
+        width: 0,
+        height: 0,
+        zIndex: 9998,
         pointerEvents: "none",
       }}
     >
@@ -402,6 +495,7 @@ function SimpleRadialMenu({
               ref={(el) => (itemRefs.current[i] = el)}
               tabIndex={index === i ? 0 : -1}
               id={`simple-radial-item-${item.id}`}
+              aria-label={item.label}
               title={item.label}
               style={{
                 pointerEvents: "auto",
@@ -411,10 +505,7 @@ function SimpleRadialMenu({
             >
               {item.icon}
             </button>
-            <span
-              className="rm-label"
-              style={{ left: labelX, top: labelY }}
-            >
+            <span className="rm-label" style={{ left: labelX, top: labelY }}>
               {item.label}
             </span>
           </React.Fragment>
@@ -423,4 +514,3 @@ function SimpleRadialMenu({
     </div>
   );
 }
-
