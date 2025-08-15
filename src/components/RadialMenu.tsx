@@ -37,59 +37,63 @@ export default function RadialMenu({
     setIndex(0);
   }, []);
 
-  const rootItems = [
-    { id: "chat", label: "Chat", icon: "💬", action: () => { onChat(); onClose(); } },
-    { id: "react", label: "React", icon: "👏", next: "react" as const },
-    { id: "create", label: "Create", icon: "✍️", next: "create" as const },
-    {
-      id: "profile",
-      label: "Profile",
-      icon: (
-        <img
-          src={avatarUrl}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      ),
+  const PAGE_SIZE = 8;
+
+  const menuConfig = {
+    root: [
+      { id: "chat", label: "Chat", icon: "💬", action: () => { onChat(); onClose(); } },
+      { id: "react", label: "React", icon: "👏", next: "react" as const },
+      { id: "create", label: "Create", icon: "✍️", next: "create" as const },
+      {
+        id: "profile",
+        label: "Profile",
+        icon: (
+          <img
+            src={avatarUrl}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ),
+        action: () => {
+          onProfile();
+          onClose();
+        },
+      },
+    ],
+    react: emojis.slice(0, PAGE_SIZE).map((e, i) => ({
+      id: `emoji-${i}`,
+      label: `React ${e}`,
+      icon: e,
       action: () => {
-        onProfile();
+        onReact(e);
         onClose();
       },
-    },
-  ];
+    })),
+    reactAll: emojis.map((e, i) => ({
+      id: `emoji-all-${i}`,
+      label: `React ${e}`,
+      icon: e,
+      action: () => {
+        onReact(e);
+        onClose();
+      },
+    })),
+    create: [
+      { id: "comment", label: "Comment", icon: "✍️", action: () => { onComment(); onClose(); } },
+      { id: "remix", label: "Remix", icon: "🎬", action: () => { onRemix(); onClose(); } },
+      { id: "share", label: "Share", icon: "↗️", action: () => { onShare(); onClose(); } },
+    ],
+    moreReact: { id: "more", label: "More reactions", icon: "…", next: "react-all" as const },
+  } as const;
 
-  const PAGE_SIZE = 8;
-  const baseReactItems = emojis.slice(0, PAGE_SIZE).map((e, i) => ({
-    id: `emoji-${i}`,
-    label: `React ${e}`,
-    icon: e,
-    action: () => {
-      onReact(e);
-      onClose();
-    },
-  }));
+  const rootItems = menuConfig.root;
+  const baseReactItems = menuConfig.react;
   const reactItems =
     emojis.length > PAGE_SIZE
-      ? [
-          ...baseReactItems,
-          { id: "more", label: "More reactions", icon: "…", next: "react-all" as const },
-        ]
+      ? [...baseReactItems, menuConfig.moreReact]
       : baseReactItems;
-  const reactAllItems = emojis.map((e, i) => ({
-    id: `emoji-all-${i}`,
-    label: `React ${e}`,
-    icon: e,
-    action: () => {
-      onReact(e);
-      onClose();
-    },
-  }));
-
-  const createItems = [
-    { id: "comment", label: "Comment", icon: "✍️", action: () => { onComment(); onClose(); } },
-    { id: "remix", label: "Remix", icon: "🎬", action: () => { onRemix(); onClose(); } },
-    { id: "share", label: "Share", icon: "↗️", action: () => { onShare(); onClose(); } },
-  ];
+  const reactAllItems = menuConfig.reactAll;
+  const createItems = menuConfig.create;
 
   const currentItems =
     step === "root"
@@ -141,14 +145,16 @@ export default function RadialMenu({
     backdropFilter: "blur(8px) saturate(140%)",
   };
 
+  const angleFor = (i: number, len: number) => (360 / len) * i - 90;
+
   function renderItem(
     item: any,
     i: number,
-    angle: number,
     active: boolean,
-    radius: number
+    radius: number,
+    len: number
   ) {
-    const rad = (angle * Math.PI) / 180;
+    const rad = (angleFor(i, len) * Math.PI) / 180;
     const x = radius * Math.cos(rad) - 20;
     const y = radius * Math.sin(rad) - 20;
     return (
@@ -195,14 +201,6 @@ export default function RadialMenu({
     );
   }
 
-  // evenly spaced around the circle for a more logical layout
-  const evenlySpaced = (len: number) =>
-    Array.from({ length: len }, (_, i) => (360 / len) * i - 90);
-  const rootAngles = evenlySpaced(rootItems.length);
-  const reactAngles = evenlySpaced(reactItems.length);
-  const reactAllAngles = evenlySpaced(reactAllItems.length);
-  const createAngles = evenlySpaced(createItems.length);
-
   const activeId = currentItems[index]?.id || "";
 
   return (
@@ -214,11 +212,13 @@ export default function RadialMenu({
       aria-activedescendant={`assistant-menu-item-${activeId}`}
       style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
     >
-      <AnimatePresence>
-        {rootItems.map((item, i) =>
-          step === "root" ? renderItem(item, i, rootAngles[i], i === index, 74) : null
-        )}
-      </AnimatePresence>
+      {step === "root" && (
+        <AnimatePresence>
+          {rootItems.map((item, i) =>
+            renderItem(item, i, i === index, 74, currentItems.length)
+          )}
+        </AnimatePresence>
+      )}
       <AnimatePresence mode="wait">
         <motion.button
           key={step === "root" ? "close" : "back"}
@@ -246,21 +246,21 @@ export default function RadialMenu({
       {step === "react" && (
         <AnimatePresence>
           {reactItems.map((item, i) =>
-            renderItem(item, i, reactAngles[i], i === index, 120)
+            renderItem(item, i, i === index, 120, currentItems.length)
           )}
         </AnimatePresence>
       )}
       {step === "react-all" && (
         <AnimatePresence>
           {reactAllItems.map((item, i) =>
-            renderItem(item, i, reactAllAngles[i], i === index, 120)
+            renderItem(item, i, i === index, 120, currentItems.length)
           )}
         </AnimatePresence>
       )}
       {step === "create" && (
         <AnimatePresence>
           {createItems.map((item, i) =>
-            renderItem(item, i, createAngles[i], i === index, 120)
+            renderItem(item, i, i === index, 120, currentItems.length)
           )}
         </AnimatePresence>
       )}
