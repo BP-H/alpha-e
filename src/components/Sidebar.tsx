@@ -52,10 +52,18 @@ export default function Sidebar() {
   const [showKey, setShowKey] = useState<string | null>(null);
   const setKey = (k: keyof Keys, v: string) => setKeys({ ...keys, [k]: v });
   const clearAll = () => {
-    Object.keys(localStorage)
+    if (
+      typeof window === "undefined" ||
+      !window.localStorage ||
+      typeof window.location?.reload !== "function"
+    ) {
+      return;
+    }
+
+    Object.keys(window.localStorage)
       .filter(k => k.startsWith("sn."))
-      .forEach(k => localStorage.removeItem(k));
-    location.reload();
+      .forEach(k => window.localStorage.removeItem(k));
+    window.location.reload();
   };
 
   const pages = [
