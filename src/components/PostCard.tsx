@@ -61,7 +61,7 @@ export default function PostCard({ post, onOpenProfile, onEnterWorld }: Props) {
         ) : (
           <img
             src={img || mediaFallback}
-            alt=""
+            alt={post.title ?? post.author ?? "post image"}
             loading="lazy"
             onLoad={onMediaReady}
           />
