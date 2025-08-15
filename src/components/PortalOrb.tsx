@@ -138,6 +138,68 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
     analyzeOverlay.current = null;
   }
 
+  const actions: { icon: React.ReactNode; label: string; callback: () => void }[] = [
+    {
+      icon: (
+        <svg viewBox="0 0 24 24" className="ico">
+          <path
+            d="M15.5 15.5L21 21"
+            stroke="currentColor"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="square"
+          />
+          <circle
+            cx="10"
+            cy="10"
+            r="6"
+            stroke="currentColor"
+            strokeWidth="2"
+            fill="none"
+          />
+        </svg>
+      ),
+      label: "Analyze",
+      callback: startAnalyze,
+    },
+    {
+      icon: (
+        <svg className="ico" viewBox="0 0 24 24">
+          <path
+            d="M4 20h16M4 4h12l4 4v8"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+        </svg>
+      ),
+      label: "Compose",
+      callback: () => {
+        setMenuOpen(false);
+        orbRef.current?.classList.remove("grow");
+        // placeholder “compose” action
+        alert("Compose: hook this to your AI API.");
+      },
+    },
+    {
+      icon: (
+        <svg className="ico" viewBox="0 0 24 24">
+          <path
+            d="M5 5l14 14M19 5L5 19"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+        </svg>
+      ),
+      label: "Close",
+      callback: () => {
+        setMode("idle");
+        setMenuOpen(false);
+        orbRef.current?.classList.remove("grow");
+      },
+    },
+  ];
+
   function handleOrbKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -221,80 +283,38 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
             onKeyDown={handleMenuKey}
             aria-activedescendant={`portal-orb-item-${menuIndex}`}
           >
-            <button
-              className="rm-item"
-              onClick={startAnalyze}
-              title="Analyze"
-              role="menuitem"
-              ref={(el) => (itemRefs.current[0] = el)}
-              tabIndex={menuIndex === 0 ? 0 : -1}
-              id="portal-orb-item-0"
-            >
-              <svg viewBox="0 0 24 24" className="ico">
-                <path
-                  d="M15.5 15.5L21 21"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  fill="none"
-                  strokeLinecap="square"
-                />
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  fill="none"
-                />
-              </svg>
-              <span>Analyze</span>
-            </button>
-            <button
-              className="rm-item"
-              onClick={() => {
-                setMenuOpen(false);
-                orbRef.current?.classList.remove("grow");
-                // placeholder “compose” action
-                alert("Compose: hook this to your AI API.");
-              }}
-              title="Compose"
-              role="menuitem"
-              ref={(el) => (itemRefs.current[1] = el)}
-              tabIndex={menuIndex === 1 ? 0 : -1}
-              id="portal-orb-item-1"
-            >
-              <svg className="ico" viewBox="0 0 24 24">
-                <path
-                  d="M4 20h16M4 4h12l4 4v8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-              </svg>
-              <span>Compose</span>
-            </button>
-            <button
-              className="rm-item"
-              onClick={() => {
-                setMode("idle");
-                setMenuOpen(false);
-                orbRef.current?.classList.remove("grow");
-              }}
-              title="Close"
-              role="menuitem"
-              ref={(el) => (itemRefs.current[2] = el)}
-              tabIndex={menuIndex === 2 ? 0 : -1}
-              id="portal-orb-item-2"
-            >
-              <svg className="ico" viewBox="0 0 24 24">
-                <path
-                  d="M5 5l14 14M19 5L5 19"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-              </svg>
-              <span>Close</span>
-            </button>
+            {actions.map((action, i) => {
+              const angle = (360 / actions.length) * i - 90;
+              const rad = (angle * Math.PI) / 180;
+              const iconX = 94 * Math.cos(rad);
+              const iconY = 94 * Math.sin(rad);
+              const labelX = 140 * Math.cos(rad);
+              const labelY = 140 * Math.sin(rad);
+              return (
+                <React.Fragment key={action.label}>
+                  <button
+                    className="rm-item"
+                    onClick={action.callback}
+                    title={action.label}
+                    role="menuitem"
+                    ref={(el) => (itemRefs.current[i] = el)}
+                    tabIndex={menuIndex === i ? 0 : -1}
+                    id={`portal-orb-item-${i}`}
+                    style={{ transform: `translate(${iconX}px, ${iconY}px)` }}
+                  >
+                    {action.icon}
+                  </button>
+                  <span
+                    className="rm-label"
+                    style={{
+                      transform: `translate(${labelX}px, ${labelY}px) translate(-50%, -50%)`,
+                    }}
+                  >
+                    {action.label}
+                  </span>
+                </React.Fragment>
+              );
+            })}
           </div>
         )}
       </div>
@@ -343,10 +363,12 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
           display:grid;place-items:center;gap:6px;padding:6px 8px;background:rgba(16,18,24,.9);
           border:1px solid var(--stroke-2);color:#fff;
         }
-        .rm-item:nth-child(1){transform:translate(-94px,0)}
-        .rm-item:nth-child(2){transform:translate(94px,0)}
-        .rm-item:nth-child(3){transform:translate(0,94px)}
         .rm-item .ico{width:18px;height:18px}
+        .rm-label{
+          position:absolute;pointer-events:none;
+          padding:2px 4px;background:rgba(16,18,24,.9);
+          border:1px solid var(--stroke-2);color:#fff;font-size:12px;
+        }
         .analyzing .orb-core{ box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 10px 70px rgba(10,132,255,.7) }
       `}</style>
     </>
