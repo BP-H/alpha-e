@@ -27,7 +27,7 @@ export default function RadialMenu({
   emojis,
 }: RadialMenuProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [step, setStep] = useState<"root" | "react" | "create">("root");
+  const [step, setStep] = useState<"root" | "react" | "react-all" | "create">("root");
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
@@ -58,8 +58,25 @@ export default function RadialMenu({
     },
   ];
 
-  const reactItems = emojis.map((e, i) => ({
+  const PAGE_SIZE = 8;
+  const baseReactItems = emojis.slice(0, PAGE_SIZE).map((e, i) => ({
     id: `emoji-${i}`,
+    label: `React ${e}`,
+    icon: e,
+    action: () => {
+      onReact(e);
+      onClose();
+    },
+  }));
+  const reactItems =
+    emojis.length > PAGE_SIZE
+      ? [
+          ...baseReactItems,
+          { id: "more", label: "More reactions", icon: "…", next: "react-all" as const },
+        ]
+      : baseReactItems;
+  const reactAllItems = emojis.map((e, i) => ({
+    id: `emoji-all-${i}`,
     label: `React ${e}`,
     icon: e,
     action: () => {
@@ -74,7 +91,14 @@ export default function RadialMenu({
     { id: "share", label: "Share", icon: "↗️", action: () => { onShare(); onClose(); } },
   ];
 
-  const currentItems = step === "root" ? rootItems : step === "react" ? reactItems : createItems;
+  const currentItems =
+    step === "root"
+      ? rootItems
+      : step === "react"
+      ? reactItems
+      : step === "react-all"
+      ? reactAllItems
+      : createItems;
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -136,16 +160,26 @@ export default function RadialMenu({
         aria-label={item.label}
         style={{
           ...rbtn,
-          left: x,
-          top: y,
+          left: -20,
+          top: -20,
         }}
-        initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        initial={
+          reduceMotion
+            ? { scale: 1, opacity: 1, x, y }
+            : { scale: 0, opacity: 0, x: 0, y: 0 }
+        }
         animate={{
           scale: 1,
           opacity: 1,
+          x,
+          y,
           boxShadow: active ? "0 0 0 2px #ff74de" : "none",
         }}
-        exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        exit={
+          reduceMotion
+            ? { scale: 1, opacity: 1, x, y }
+            : { scale: 0, opacity: 0, x: 0, y: 0 }
+        }
         transition={{ duration: reduceMotion ? 0 : 0.2 }}
         onClick={() => {
           if (item.next) {
@@ -162,9 +196,12 @@ export default function RadialMenu({
   }
 
   // evenly spaced around the circle for a more logical layout
-  const rootAngles = [-90, 0, 90, 180];
-  const reactAngles = reactItems.map((_, i) => (360 / reactItems.length) * i - 90);
-  const createAngles = createItems.map((_, i) => (360 / createItems.length) * i - 90);
+  const evenlySpaced = (len: number) =>
+    Array.from({ length: len }, (_, i) => (360 / len) * i - 90);
+  const rootAngles = evenlySpaced(rootItems.length);
+  const reactAngles = evenlySpaced(reactItems.length);
+  const reactAllAngles = evenlySpaced(reactAllItems.length);
+  const createAngles = evenlySpaced(createItems.length);
 
   const activeId = currentItems[index]?.id || "";
 
@@ -177,38 +214,46 @@ export default function RadialMenu({
       aria-activedescendant={`assistant-menu-item-${activeId}`}
       style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
     >
-      {step === "root" && (
-        <AnimatePresence>
-          {rootItems.map((item, i) =>
-            renderItem(item, i, rootAngles[i], i === index, 74)
-          )}
-        </AnimatePresence>
-      )}
       <AnimatePresence>
-        {step !== "root" && (
-          <motion.button
-            id="assistant-menu-item-back"
-            role="menuitem"
-            tabIndex={-1}
-            aria-label="Back"
-            style={{ ...rbtn, left: -20, top: -20 }}
-            initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            onClick={() => {
+        {rootItems.map((item, i) =>
+          step === "root" ? renderItem(item, i, rootAngles[i], i === index, 74) : null
+        )}
+      </AnimatePresence>
+      <AnimatePresence mode="wait">
+        <motion.button
+          key={step === "root" ? "close" : "back"}
+          id={step === "root" ? "assistant-menu-item-close" : "assistant-menu-item-back"}
+          role="menuitem"
+          tabIndex={-1}
+          aria-label={step === "root" ? "Close" : "Back"}
+          style={{ ...rbtn, left: -20, top: -20 }}
+          initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.2 }}
+          onClick={() => {
+            if (step === "root") {
+              onClose();
+            } else {
               setStep("root");
               setIndex(0);
-            }}
-          >
-            ⬅️
-          </motion.button>
-        )}
+            }
+          }}
+        >
+          {step === "root" ? "✖️" : "⬅️"}
+        </motion.button>
       </AnimatePresence>
       {step === "react" && (
         <AnimatePresence>
           {reactItems.map((item, i) =>
             renderItem(item, i, reactAngles[i], i === index, 120)
+          )}
+        </AnimatePresence>
+      )}
+      {step === "react-all" && (
+        <AnimatePresence>
+          {reactAllItems.map((item, i) =>
+            renderItem(item, i, reactAllAngles[i], i === index, 120)
           )}
         </AnimatePresence>
       )}
