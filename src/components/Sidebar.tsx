@@ -1,10 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import bus from "../lib/bus";
 import { useTheme } from "../lib/useTheme";
 
-type Keys = { openai?: string; anthropic?: string; perplexity?: string; stability?: string; elevenlabs?: string; };
+type Keys = {
+  openai?: string;
+  anthropic?: string;
+  perplexity?: string;
+  stability?: string;
+  elevenlabs?: string;
+};
 
 function useLocal<T>(key: string, init: T) {
   const [v, setV] = useState<T>(() => {
@@ -18,7 +24,9 @@ function useLocal<T>(key: string, init: T) {
   });
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try { window.localStorage.setItem(key, JSON.stringify(v)); } catch {}
+    try {
+      window.localStorage.setItem(key, JSON.stringify(v));
+    } catch {}
   }, [key, v]);
   return [v, setV] as const;
 }
@@ -27,21 +35,31 @@ export default function Sidebar() {
   const [open, setOpen] = useLocal("sn.sidebar.open", false);
 
   useEffect(() => {
-    const a = bus.on("sidebar:toggle", () => setOpen(v => !v));
+    const a = bus.on("sidebar:toggle", () => setOpen((v) => !v));
     const b = bus.on("sidebar:open", () => setOpen(true));
     const c = bus.on("sidebar:close", () => setOpen(false));
-    return () => { a?.(); b?.(); c?.(); };
+    return () => {
+      a?.();
+      b?.();
+      c?.();
+    };
   }, [setOpen]);
 
   // Profile info and settings...
   const [name, setName] = useLocal("sn.profile.name", "Your Name");
   const [handle, setHandle] = useLocal("sn.profile.handle", "@you");
-  const [bio, setBio] = useLocal("sn.profile.bio", "I bend worlds with orbs and postcards.");
+  const [bio, setBio] = useLocal(
+    "sn.profile.bio",
+    "I bend worlds with orbs and postcards."
+  );
   const [avatar, setAvatar] = useLocal("sn.profile.avatar", "/avatar.jpg");
 
   const [theme, setTheme] = useTheme();
   const [accent, setAccent] = useLocal("sn.accent", "#7c83ff");
-  const [worldMode, setWorldMode] = useLocal<"orbs"|"matrix">("sn.world.mode", "orbs");
+  const [worldMode, setWorldMode] = useLocal<"orbs" | "matrix">(
+    "sn.world.mode",
+    "orbs"
+  );
   const [orbCount, setOrbCount] = useLocal("sn.world.count", 64);
 
   useEffect(() => {
@@ -53,8 +71,8 @@ export default function Sidebar() {
   const setKey = (k: keyof Keys, v: string) => setKeys({ ...keys, [k]: v });
   const clearAll = () => {
     Object.keys(localStorage)
-      .filter(k => k.startsWith("sn."))
-      .forEach(k => localStorage.removeItem(k));
+      .filter((k) => k.startsWith("sn."))
+      .forEach((k) => localStorage.removeItem(k));
     location.reload();
   };
 
@@ -64,6 +82,27 @@ export default function Sidebar() {
     { label: "Settings", path: "/settings", icon: "⚙️" },
   ];
 
+  // Accessibility: focus management & Escape-to-close
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const prevActive = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (open && e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, setOpen]);
+
+  useEffect(() => {
+    if (open) {
+      prevActive.current = document.activeElement as HTMLElement | null;
+      requestAnimationFrame(() => panelRef.current?.focus());
+    } else {
+      prevActive.current?.focus?.();
+    }
+  }, [open]);
+
   return (
     <>
       <div
@@ -71,30 +110,57 @@ export default function Sidebar() {
         onClick={() => setOpen(false)}
         aria-label="Close sidebar"
         aria-hidden={!open}
+        role="presentation"
       />
       <aside className={`sb ${open ? "open" : ""}`} aria-hidden={!open}>
-        <div className="sb-panel" role="dialog" aria-modal={open ? "true" : undefined}>
+        <div
+          ref={panelRef}
+          className="sb-panel"
+          role="dialog"
+          aria-modal={open}
+          aria-labelledby="sb-title"
+          tabIndex={-1}
+        >
           {/* Header */}
           <div className="sb-head">
-            <button className="sb-x" onClick={() => setOpen(false)} aria-label="Close">✕</button>
+            <button
+              className="sb-x"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              type="button"
+            >
+              ✕
+            </button>
             <div className="sb-brand">
               <span className="sb-orb" />
-              <span className="sb-logo">superNova</span>
+              <span id="sb-title" className="sb-logo">
+                superNova
+              </span>
             </div>
           </div>
 
-          <nav className="sb-nav" aria-label="Main">
-            <ul>
-              {pages.map(p => (
-                <li key={p.path}>
-                  <NavLink to={p.path} end>
-                    <span aria-hidden>{p.icon}</span>
-                    <span>{p.label}</span>
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          {/* Navigation */}
+          <section className="card">
+            <header>Navigation</header>
+            <nav className="sb-nav" aria-label="Navigation">
+              <ul>
+                {pages.map((p) => (
+                  <li key={p.path}>
+                    <NavLink
+                      to={p.path}
+                      end
+                      className={({ isActive }) => (isActive ? "active" : "")}
+                      onClick={() => setOpen(false)}
+                      aria-label={p.label}
+                    >
+                      <span aria-hidden>{p.icon}</span>
+                      <span>{p.label}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </section>
 
           {/* Profile card */}
           <section className="card profile">
@@ -107,7 +173,11 @@ export default function Sidebar() {
             <div className="grid two">
               <div>
                 <label className="label">Theme</label>
-                <select className="input" value={theme} onChange={e => setTheme(e.target.value as any)}>
+                <select
+                  className="input"
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value as any)}
+                >
                   <option value="dark">Dark</option>
                   <option value="light">Light</option>
                 </select>
@@ -115,16 +185,23 @@ export default function Sidebar() {
               <div>
                 <label className="label">Accent</label>
                 <div className="swatches">
-                  {["#7c83ff","#ff74de","#00ffa2","#9efcff","#ffd166"].map(c => (
-                    <button
-                      key={c}
-                      className={`sw ${c===accent ? "on" : ""}`}
-                      style={{ background: c }}
-                      onClick={() => setAccent(c)}
-                      aria-label={c}
-                    />
-                  ))}
-                  <input className="input" value={accent} onChange={e => setAccent(e.target.value)} />
+                  {["#7c83ff", "#ff74de", "#00ffa2", "#9efcff", "#ffd166"].map(
+                    (c) => (
+                      <button
+                        key={c}
+                        className={`sw ${c === accent ? "on" : ""}`}
+                        style={{ background: c }}
+                        onClick={() => setAccent(c)}
+                        aria-label={c}
+                        type="button"
+                      />
+                    )
+                  )}
+                  <input
+                    className="input"
+                    value={accent}
+                    onChange={(e) => setAccent(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
@@ -132,7 +209,11 @@ export default function Sidebar() {
             <div className="grid two">
               <div>
                 <label className="label">Background</label>
-                <select className="input" value={worldMode} onChange={e => setWorldMode(e.target.value as any)}>
+                <select
+                  className="input"
+                  value={worldMode}
+                  onChange={(e) => setWorldMode(e.target.value as any)}
+                >
                   <option value="orbs">Orb Mesh</option>
                   <option value="matrix">Matrix Drift</option>
                 </select>
@@ -140,9 +221,13 @@ export default function Sidebar() {
               <div>
                 <label className="label">Orb density</label>
                 <input
-                  className="input" type="range" min={16} max={160} step={4}
+                  className="input"
+                  type="range"
+                  min={16}
+                  max={160}
+                  step={4}
                   value={orbCount}
-                  onChange={e => setOrbCount(parseInt(e.target.value, 10))}
+                  onChange={(e) => setOrbCount(parseInt(e.target.value, 10))}
                 />
               </div>
             </div>
