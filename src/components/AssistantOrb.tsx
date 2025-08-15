@@ -401,6 +401,25 @@ export default function AssistantOrb() {
   useEffect(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, [msgs]);
 
   useEffect(() => {
+    if (!menuOpen) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      const menuEl = document.querySelector('[role="menu"]');
+      if (orbRef.current?.contains(e.target as Node)) return;
+      if (menuEl?.contains(e.target as Node)) return;
+      setMenuOpen(false);
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
     const onResize = () => {
       if (typeof window === "undefined") return;
       const nx = clamp(posRef.current.x, ORB_MARGIN, window.innerWidth - ORB_SIZE - ORB_MARGIN);
@@ -524,8 +543,6 @@ export default function AssistantOrb() {
         onLostPointerCapture={onLostPointerCapture}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        onMouseEnter={() => { setMenuOpen(true); requestAnimationFrame(updateAnchors); }}
-        onMouseLeave={() => { if (!dragging) setMenuOpen(false); }}
         onKeyDown={handleOrbKeyDown}
       >
         <motion.div
