@@ -28,16 +28,18 @@ export function useInfiniteScroll<T>(opts: {
           setItems((prev) => prev.concat(next));
           setPage((p) => p + 1);
         }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Load failed");
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "Load failed";
+          setError(message);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
     load();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [items.length, loadMore]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,8 +53,11 @@ export function useInfiniteScroll<T>(opts: {
           setItems((prev) => prev.concat(next));
           setPage((p) => p + 1);
         }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Load failed");
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "Load failed";
+          setError(message);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
