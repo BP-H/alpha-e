@@ -82,25 +82,11 @@ export default function InfiniteFeed({
               loading="lazy"
               decoding="async"
               onLoad={(e) => {
-                // swap to full-res when in view using data-src if the browser kept the thumb
                 const el = e.currentTarget;
                 // upgrade if we were still on thumb
                 if (el.dataset.src && el.src.indexOf("picsum.photos/id") > -1 && el.src.includes("/200/")) {
-                  const swap = () => {
-                    el.src = el.dataset.src as string;
-                    delete el.dataset.src;
-                  };
-                  if ("IntersectionObserver" in window) {
-                    const io = new IntersectionObserver((entries, obs) => {
-                      if (entries[0].isIntersecting) {
-                        swap();
-                        obs.disconnect();
-                      }
-                    });
-                    io.observe(el);
-                  } else {
-                    swap();
-                  }
+                  el.src = el.dataset.src as string;
+                  delete el.dataset.src;
                 }
               }}
             />
@@ -121,7 +107,12 @@ export default function InfiniteFeed({
                 className="pc-act"
                 data-drop="share"
                 title="Share"
-                onClick={() => sharePost(img.link || window.location.href, img.author)}
+                onClick={() =>
+                  sharePost(
+                    img.link || (typeof window !== "undefined" ? window.location.href : ""),
+                    img.author
+                  )
+                }
               >
                 <span className="ico share" /><span>Share</span>
               </button>

@@ -164,7 +164,7 @@ export default function PostComposer() {
         <div className="composer__attachments">
           {images.map((src, i) => (
             <div className="att" key={`img-${i}`}>
-              <img src={src} alt="" />
+              <img src={src} alt={`attachment ${i + 1}`} />
               <button className="att__x" title="Remove" onClick={() => removeImage(i)}>
                 ×
               </button>

@@ -1,5 +1,89 @@
-.assistant-orb{position:fixed;width:76px;height:76px;border-radius:50%;border:none;padding:0;background:transparent;touch-action:none;}
-.assistant-orb__core{position:absolute;inset:8px;border-radius:50%;background:#4b6;}
-.assistant-orb__ring{position:absolute;inset:0;border-radius:50%;border:2px solid #4b6;animation:ping 2s infinite;}
-.assistant-orb__toast{position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px;}
-@keyframes ping{from{transform:scale(.9);opacity:.6;}to{transform:scale(1.4);opacity:0;}}
+.assistant-orb {
+  position: fixed;
+  width: var(--orb-size);
+  height: var(--orb-size);
+  border-radius: 50%;
+  border: 1px solid var(--stroke-2);
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  overflow: hidden;
+  background: var(--orb-bg);
+  box-shadow: var(--orb-shadow);
+  backdrop-filter: blur(14px) saturate(140%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  touch-action: none;
+}
+
+.assistant-orb:hover {
+  transform: scale(1.03);
+  filter: saturate(115%);
+}
+
+.assistant-orb:active {
+  transform: scale(0.97);
+}
+
+.assistant-orb__core {
+  width: calc(var(--orb-size) - 20px);
+  height: calc(var(--orb-size) - 20px);
+  border-radius: 50%;
+  background: radial-gradient(
+    60% 60% at 40% 35%,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.3) 65%,
+    transparent 70%
+  );
+}
+
+.assistant-orb__ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 24px var(--orb-ring);
+  filter: blur(4px);
+}
+
+.assistant-orb.mic .assistant-orb__ring {
+  animation: orb-ping 1.4s ease-out infinite;
+}
+
+@keyframes orb-ping {
+  0% {
+    box-shadow: 0 0 0 0 var(--orb-ring);
+  }
+  100% {
+    box-shadow: 0 0 0 28px rgba(0, 0, 0, 0);
+  }
+}
+
+.assistant-orb__toast {
+  position: absolute;
+  white-space: nowrap;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.assistant-orb__toast.right {
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.assistant-orb__toast.left {
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.assistant-orb__toast.interim {
+  bottom: calc(100% + 4px);
+  top: auto;
+  transform: none;
+}
+

@@ -13,8 +13,11 @@ import {
  * Returns true if sharing/copy succeeded, false otherwise.
  */
 export function sharePost(url: string, title?: string): Promise<boolean>;
-export function sharePost(arg: Post | ShareOptions | string): Promise<boolean>;
-export async function sharePost(arg: any, title?: string): Promise<boolean> {
+export function sharePost(arg: Post | ShareOptions | string, title?: never): Promise<boolean>;
+export async function sharePost(
+  arg: Post | ShareOptions | string,
+  title?: string,
+): Promise<boolean> {
   try {
     // Old signature: (url: string, title?: string)
     if (typeof arg === "string" && (title === undefined || typeof title === "string")) {

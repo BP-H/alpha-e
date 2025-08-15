@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import bus from "../lib/bus";
 
@@ -57,6 +58,12 @@ export default function Sidebar() {
     location.reload();
   };
 
+  const pages = [
+    { label: "Home", path: "/", icon: "🏠" },
+    { label: "Profile", path: "/profile", icon: "👤" },
+    { label: "Settings", path: "/settings", icon: "⚙️" },
+  ];
+
   return (
     <>
       {open && <div className="sb-scrim" onClick={() => setOpen(false)} aria-label="Close sidebar" />}
@@ -71,6 +78,19 @@ export default function Sidebar() {
                 <span className="sb-logo">superNova</span>
               </div>
             </div>
+
+            <nav className="sb-nav" aria-label="Main">
+              <ul>
+                {pages.map(p => (
+                  <li key={p.path}>
+                    <NavLink to={p.path} end>
+                      <span aria-hidden>{p.icon}</span>
+                      <span>{p.label}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
 
             {/* Profile card */}
             <section className="card profile">

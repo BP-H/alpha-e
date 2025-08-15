@@ -17,7 +17,8 @@ export default function Topbar() {
   }, [theme]);
 
   useLayoutEffect(() => {
-    const el = ref.current!;
+    if (!ref.current) return;
+    const el = ref.current;
     const setH = () => {
       document.documentElement.style.setProperty("--topbar-h", `${el.offsetHeight}px`);
     };
