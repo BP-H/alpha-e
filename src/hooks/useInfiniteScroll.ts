@@ -16,6 +16,7 @@ export function useInfiniteScroll<T>(opts: {
   };
   const [error, setError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     if (items.length !== 0) return;
@@ -41,6 +42,7 @@ export function useInfiniteScroll<T>(opts: {
 
   useEffect(() => {
     let cancelled = false;
+    observerRef.current?.disconnect();
     const io = new IntersectionObserver(async (entries) => {
       const e = entries[0];
       if (!e.isIntersecting || loadingRef.current || !hasMore) return;
@@ -57,10 +59,14 @@ export function useInfiniteScroll<T>(opts: {
         if (!cancelled) setLoading(false);
       }
     }, { rootMargin });
+    observerRef.current = io;
     const node = sentinelRef.current;
     if (node) io.observe(node);
-    return () => { cancelled = true; io.disconnect(); };
-  }, [loadMore, hasMore, rootMargin]);
+    return () => {
+      cancelled = true;
+      observerRef.current?.disconnect();
+    };
+  }, [loadMore, hasMore, rootMargin, sentinelRef.current]);
 
   return { items, setItems, page, setPage, loading, error, sentinelRef };
 }
