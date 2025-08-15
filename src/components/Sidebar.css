@@ -1,6 +1,44 @@
-:root { --accent: #0A84FF; }
+/* Sidebar animations */
+:root {
+  --accent: #0A84FF;
+  --sb-duration: 0.28s;
+  --sb-ease: cubic-bezier(.18,.9,.22,1);
+  --sb-closed-transform: translateY(-8px) scale(.975);
+}
 
-.sb { position: fixed; top: 16px; left: 16px; z-index: 70; }
+.sb {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 70;
+  opacity: 0;
+  transform: var(--sb-closed-transform);
+  pointer-events: none;
+  transition:
+    transform var(--sb-duration) var(--sb-ease),
+    opacity var(--sb-duration) var(--sb-ease);
+}
+
+.sb.open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.sb-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--sb-duration) var(--sb-ease);
+}
+
+.sb-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 /* Floating avatar FAB removed */
 
@@ -16,11 +54,13 @@
   backdrop-filter: blur(30px) saturate(200%);
   box-shadow: 0 28px 64px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
   padding: 14px;
-  animation: sbIn 0.28s cubic-bezier(.18,.9,.22,1) forwards;
 }
-@keyframes sbIn {
-  from { transform: translateY(-8px) scale(.975); opacity: 0; }
-  to   { transform: none; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sb,
+  .sb-scrim {
+    transition: none;
+  }
 }
 
 /* Sidebar header */

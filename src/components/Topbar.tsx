@@ -1,20 +1,10 @@
-import React, { useLayoutEffect, useRef, useState, useEffect } from "react";
+import React, { useLayoutEffect, useRef } from "react";
 import bus from "../lib/bus";
+import { useTheme } from "../lib/useTheme";
 
 export default function Topbar() {
   const ref = useRef<HTMLElement | null>(null);
-  const [theme, setTheme] = useState(() =>
-    typeof window !== "undefined"
-      ? localStorage.getItem("theme") || "dark"
-      : "dark"
-  );
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme]);
+  const [theme, setTheme] = useTheme();
 
   useLayoutEffect(() => {
     if (!ref.current) return;
