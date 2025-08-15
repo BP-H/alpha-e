@@ -50,6 +50,13 @@ describe("RadialMenu keyboard navigation", () => {
     fireEvent.keyDown(menu, { key: "ArrowRight" });
     await waitFor(() =>
       expect(menu.getAttribute("aria-activedescendant")).toBe(
+        "assistant-menu-item-back"
+      )
+    );
+
+    fireEvent.keyDown(menu, { key: "ArrowRight" });
+    await waitFor(() =>
+      expect(menu.getAttribute("aria-activedescendant")).toBe(
         "assistant-menu-item-emoji-0"
       )
     );

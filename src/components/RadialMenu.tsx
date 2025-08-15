@@ -95,7 +95,7 @@ export default function RadialMenu({
   const reactAllItems = menuConfig.reactAll;
   const createItems = menuConfig.create;
 
-  const currentItems =
+  const ringItems =
     step === "root"
       ? rootItems
       : step === "react"
@@ -103,6 +103,21 @@ export default function RadialMenu({
       : step === "react-all"
       ? reactAllItems
       : createItems;
+
+  const centerItem =
+    step === "root"
+      ? { id: "close", label: "Close", icon: "✖️", action: onClose }
+      : {
+          id: "back",
+          label: "Back",
+          icon: "⬅️",
+          action: () => {
+            setStep("root");
+            setIndex(0);
+          },
+        };
+
+  const currentItems = [...ringItems, centerItem];
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -201,6 +216,32 @@ export default function RadialMenu({
     );
   }
 
+  function renderCenterItem(item: any, active: boolean) {
+    return (
+      <motion.button
+        key={item.id}
+        id={`assistant-menu-item-${item.id}`}
+        role="menuitem"
+        tabIndex={-1}
+        aria-label={item.label}
+        style={{ ...rbtn, left: -20, top: -20 }}
+        initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        animate={{
+          scale: 1,
+          opacity: 1,
+          boxShadow: active ? "0 0 0 2px #ff74de" : "none",
+        }}
+        exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.2 }}
+        onClick={item.action}
+      >
+        {item.icon}
+      </motion.button>
+    );
+  }
+
+  const ringRadius = step === "root" ? 74 : 120;
+  const centerIndex = ringItems.length;
   const activeId = currentItems[index]?.id || "";
 
   return (
@@ -212,58 +253,12 @@ export default function RadialMenu({
       aria-activedescendant={`assistant-menu-item-${activeId}`}
       style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
     >
-      {step === "root" && (
-        <AnimatePresence>
-          {rootItems.map((item, i) =>
-            renderItem(item, i, i === index, 74, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      <AnimatePresence mode="wait">
-        <motion.button
-          key={step === "root" ? "close" : "back"}
-          id={step === "root" ? "assistant-menu-item-close" : "assistant-menu-item-back"}
-          role="menuitem"
-          tabIndex={-1}
-          aria-label={step === "root" ? "Close" : "Back"}
-          style={{ ...rbtn, left: -20, top: -20 }}
-          initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0 : 0.2 }}
-          onClick={() => {
-            if (step === "root") {
-              onClose();
-            } else {
-              setStep("root");
-              setIndex(0);
-            }
-          }}
-        >
-          {step === "root" ? "✖️" : "⬅️"}
-        </motion.button>
+      <AnimatePresence>
+        {ringItems.map((item, i) =>
+          renderItem(item, i, i === index, ringRadius, ringItems.length)
+        )}
+        {renderCenterItem(centerItem, index === centerIndex)}
       </AnimatePresence>
-      {step === "react" && (
-        <AnimatePresence>
-          {reactItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      {step === "react-all" && (
-        <AnimatePresence>
-          {reactAllItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      {step === "create" && (
-        <AnimatePresence>
-          {createItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
     </div>
   );
 }
