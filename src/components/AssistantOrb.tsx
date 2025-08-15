@@ -620,4 +620,124 @@ export default function AssistantOrb() {
           <div ref={msgListRef} style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto", padding: "6px 0" }}>
             {msgs.length === 0 && <div style={{ fontSize: 13, opacity: .75 }}>Hold to speak, type a command, or use the quick menu.</div>}
             {msgs.map(m => (
-              <div k
+              <div key={m.id} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                <div style={{ maxWidth: "80%", background: m.role === "user" ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.06)", padding: "8px 10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.12)" }}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {interim && (
+              <div style={{ display: "flex" }}>
+                <div style={{ maxWidth: "80%", background: "rgba(255,255,255,.06)", padding: "8px 10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.12)" }}>
+                  …{interim}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* input row */}
+          <form
+            onSubmit={async e => {
+              e.preventDefault();
+              const input = (e.currentTarget.elements.namedItem("cmd") as HTMLInputElement);
+              const t = input.value.trim();
+              if (!t) return;
+              input.value = "";
+              await handleCommand(t);
+            }}
+            style={{ display: "flex", gap: 8, marginTop: 8 }}
+          >
+            <input
+              name="cmd"
+              placeholder="Type /comment hello, /react ❤️, /world, /remix"
+              style={{ flex: 1, height: 36, padding: "0 10px", borderRadius: 10, outline: "none", background: "rgba(16,18,28,.65)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}
+            />
+            <button
+              type="button"
+              onClick={() => (mic ? stopListening() : startListening())}
+              style={{ height: 36, padding: "0 10px", borderRadius: 10, cursor: "pointer", background: mic ? "rgba(255,116,222,.25)" : "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}
+              aria-label={mic ? "Stop" : "Speak"}
+              title={mic ? "Stop" : "Speak"}
+            >
+              {mic ? "🎙️" : "🎤"}
+            </button>
+            <button
+              type="submit"
+              style={{ height: 36, padding: "0 12px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}
+              aria-label="Send"
+            >
+              ➤
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Petal drawers */}
+      {petal && (
+        <div className="assistant-petal">
+          <div className="ap-head">
+            <div className="ap-dot" />
+            <div className="ap-title">{petal === "react" ? "React" : petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
+            <div className="ap-sub">{ctxPost ? `Post ${ctxPost.id}` : "Hover a post to target"}</div>
+            <button className="ap-btn" onClick={() => setPetal(null)}>Close</button>
+          </div>
+
+          {petal === "react" && (
+            <div className="ap-emojis">
+              {EMOJI_LIST.map(e => (
+                <button key={e} className="emoji-btn" onClick={() => handleEmojiClick(e)} title={`React ${e}`} aria-label={`React ${e}`}>{e}</button>
+              ))}
+            </div>
+          )}
+
+          {petal === "comment" && (
+            <form
+              className="ap-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const input = (e.currentTarget.elements.namedItem("cmt") as HTMLInputElement);
+                const t = input.value.trim();
+                if (!t || !ctxPost) return;
+                bus.emit?.("post:comment", { id: ctxPost.id, body: t });
+                input.value = "";
+                setPetal(null);
+              }}
+            >
+              <input className="ap-input" name="cmt" placeholder="Write a comment…" />
+              <button className="ap-send" type="submit">Send</button>
+            </form>
+          )}
+
+          {petal === "remix" && (
+            <div className="ap-body">
+              <div className="ap-hint">Make a quick remix of the current post. Uses defaults.</div>
+              <button
+                className="ap-btn"
+                onClick={() => { if (ctxPost) { bus.emit?.("post:remix", { id: ctxPost.id }); setPetal(null); } }}
+              >
+                Remix 🎬
+              </button>
+            </div>
+          )}
+
+          {petal === "share" && (
+            <div className="ap-body">
+              <div className="ap-hint">Copy link to this post.</div>
+              <button
+                className="ap-btn"
+                onClick={async () => {
+                  if (!ctxPost) return;
+                  const url = `${location.origin}${location.pathname}#post-${ctxPost.id}`;
+                  try { await navigator.clipboard.writeText(url); setToast("Link copied"); setTimeout(() => setToast(""), 900); } catch {}
+                  setPetal(null);
+                }}
+              >
+                Copy Link ↗️
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
