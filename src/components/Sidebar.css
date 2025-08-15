@@ -1,0 +1,39 @@
+:root { --accent: #0A84FF; }
+
+.sb { position: fixed; top: 16px; left: 16px; z-index: 70; }
+
+/* Floating avatar FAB removed */
+
+/* Sidebar panel (glassmorphic dark theme) */
+.sb-panel {
+  width: 360px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(16,18,28,.6);
+  color: #eef2ff;
+  backdrop-filter: blur(30px) saturate(200%);
+  box-shadow: 0 28px 64px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+  padding: 14px;
+  animation: sbIn 0.28s cubic-bezier(.18,.9,.22,1) forwards;
+}
+@keyframes sbIn {
+  from { transform: translateY(-8px) scale(.975); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+/* Sidebar header */
+.sb-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sb-x { width: 32px; height: 32px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.10); color: #fff; cursor: pointer; }
+.sb-brand { display: flex; gap: 10px; align-items: center; font-weight: 900; letter-spacing: .2px; }
+/* Small orb in sidebar header, now blue-themed */
+.sb-orb { 
+  width: 26px; height: 26px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: radial-gradient(120% 120% at 30% 30%, #fff, #a0c4ff 60%, var(--accent));
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 28%, transparent 72%);
+}
+.sb-logo { /* superNova text styling if needed (inherits font styles) */ }
+
+.card { /* ...unchanged card styles... */ }

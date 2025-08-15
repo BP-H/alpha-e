@@ -1,0 +1,5 @@
+.assistant-orb{position:fixed;width:76px;height:76px;border-radius:50%;border:none;padding:0;background:transparent;touch-action:none;}
+.assistant-orb__core{position:absolute;inset:8px;border-radius:50%;background:#4b6;}
+.assistant-orb__ring{position:absolute;inset:0;border-radius:50%;border:2px solid #4b6;animation:ping 2s infinite;}
+.assistant-orb__toast{position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px;}
+@keyframes ping{from{transform:scale(.9);opacity:.6;}to{transform:scale(1.4);opacity:0;}}
