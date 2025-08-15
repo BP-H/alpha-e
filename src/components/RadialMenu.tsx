@@ -108,20 +108,30 @@ export default function RadialMenu({
       : createItems;
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    const totalItems = currentItems.length + 1; // include center control
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      setIndex((index + 1) % currentItems.length);
+      setIndex((index + 1) % totalItems);
     } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
-      setIndex((index - 1 + currentItems.length) % currentItems.length);
+      setIndex((index - 1 + totalItems) % totalItems);
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      const item = currentItems[index];
-      if ((item as any).next) {
-        setStep((item as any).next);
-        setIndex(0);
+      if (index === currentItems.length) {
+        if (step === "root") {
+          onClose();
+        } else {
+          setStep("root");
+          setIndex(0);
+        }
       } else {
-        (item as any).action();
+        const item = currentItems[index];
+        if ((item as any).next) {
+          setStep((item as any).next);
+          setIndex(0);
+        } else {
+          (item as any).action();
+        }
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -213,7 +223,12 @@ export default function RadialMenu({
     );
   }
 
-  const activeId = currentItems[index]?.id || "";
+  const activeId =
+    index === currentItems.length
+      ? step === "root"
+        ? "close"
+        : "back"
+      : currentItems[index]?.id || "";
 
   return (
     <div
@@ -237,12 +252,27 @@ export default function RadialMenu({
           id={step === "root" ? "assistant-menu-item-close" : "assistant-menu-item-back"}
           role="menuitem"
           tabIndex={-1}
-          aria-label={step === "root" ? "Close" : "Back"}
+          aria-label={step === "root" ? "Close menu" : "Go back"}
           className="rbtn"
           style={{ left: -20, top: -20 }}
-          initial={reduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={reduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
+          initial={
+            reduceMotion
+              ? { opacity: 1, x: 0, y: 0, scale: 1 }
+              : { opacity: 0, x: 0, y: 0, scale: 0 }
+          }
+          animate={{
+            opacity: 1,
+            x: 0,
+            y: 0,
+            scale: 1,
+            boxShadow:
+              index === currentItems.length ? "0 0 0 2px #ff74de" : "none",
+          }}
+          exit={
+            reduceMotion
+              ? { opacity: 1, x: 0, y: 0, scale: 1 }
+              : { opacity: 0, x: 0, y: 0, scale: 0 }
+          }
           transition={{
             duration: reduceMotion ? 0 : 0.25,
             ease: [0.4, 0, 0.2, 1],
