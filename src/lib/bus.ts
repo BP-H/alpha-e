@@ -12,7 +12,20 @@ export function off(event: string, handler: Handler) {
   handlers?.delete(handler);
   if (handlers && handlers.size === 0) listeners.delete(event);
 }
-export function emit(event: string, payload?: any) {
-  listeners.get(event)?.forEach(fn => { try { fn(payload); } catch (e) { console.error(e); } });
+export function emit(
+  event: string,
+  payload?: any,
+  onError?: (err: unknown) => void,
+) {
+  const handlers = listeners.get(event);
+  if (!handlers) return;
+  for (const fn of handlers) {
+    try {
+      fn(payload);
+    } catch (e) {
+      if (onError) onError(e);
+      else throw e;
+    }
+  }
 }
 export default { on, off, emit };
