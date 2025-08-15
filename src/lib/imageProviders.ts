@@ -35,7 +35,13 @@ function getKey(name: string) {
 async function fetchPicsum(page: number, perPage: number): Promise<FeedImage[]> {
   const url = `https://picsum.photos/v2/list?page=${page}&limit=${perPage}`;
   const res = await fetch(url);
-  const list = await res.json() as any[];
+  if (!res.ok) return [];
+  let list: any[] = [];
+  try {
+    list = await res.json();
+  } catch {
+    return [];
+  }
   return list.map((x) => {
     const w = 1200;
     // height scaled to maintain aspect; picsum endpoint takes fixed w/h; we’ll let browser scale
@@ -62,7 +68,13 @@ async function fetchUnsplash(page: number, perPage: number, query?: string): Pro
     query: query || "",
   });
   const res = await fetch(`${base}?${params.toString()}`, { headers: { Authorization: `Client-ID ${key}` } });
-  const json = await res.json();
+  if (!res.ok) return [];
+  let json: any;
+  try {
+    json = await res.json();
+  } catch {
+    return [];
+  }
   const items = query ? (json.results || []) : json;
   return items.map((x: any) => ({
     id: x.id,
@@ -85,7 +97,13 @@ async function fetchPexels(page: number, perPage: number, query?: string): Promi
     query: query || "",
   });
   const res = await fetch(`${base}?${params.toString()}`, { headers: { Authorization: key } });
-  const json = await res.json();
+  if (!res.ok) return [];
+  let json: any;
+  try {
+    json = await res.json();
+  } catch {
+    return [];
+  }
   const items = json.photos || [];
   return items.map((x: any) => ({
     id: String(x.id),
