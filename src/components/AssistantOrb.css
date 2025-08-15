@@ -1,5 +1,78 @@
-.assistant-orb{position:fixed;width:76px;height:76px;border-radius:50%;border:none;padding:0;background:transparent;touch-action:none;}
-.assistant-orb__core{position:absolute;inset:8px;border-radius:50%;background:#4b6;}
-.assistant-orb__ring{position:absolute;inset:0;border-radius:50%;border:2px solid #4b6;animation:ping 2s infinite;}
-.assistant-orb__toast{position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px;}
-@keyframes ping{from{transform:scale(.9);opacity:.6;}to{transform:scale(1.4);opacity:0;}}
+.assistant-orb {
+  position: fixed;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  touch-action: none;
+
+  --core-color: var(--assistant-orb-core, #4b6);
+  --ring-color: var(--assistant-orb-ring, #4b6);
+  --scale: 1;
+  --orb-opacity: 1;
+
+  transition: all 0.2s ease;
+  transform: scale(var(--scale));
+  opacity: var(--orb-opacity);
+}
+
+.assistant-orb__core {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--core-color);
+  transition: inherit;
+}
+
+.assistant-orb__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--ring-color);
+  animation: ping 2s infinite;
+  transition: inherit;
+}
+
+.assistant-orb__toast {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.assistant-orb:hover {
+  --core-color: var(--assistant-orb-core-hover, var(--assistant-orb-core, #4b6));
+  --ring-color: var(--assistant-orb-ring-hover, var(--assistant-orb-ring, #4b6));
+  --scale: 1.05;
+}
+
+.assistant-orb:active {
+  --core-color: var(
+    --assistant-orb-core-active,
+    var(--assistant-orb-core-hover, var(--assistant-orb-core, #4b6))
+  );
+  --ring-color: var(
+    --assistant-orb-ring-active,
+    var(--assistant-orb-ring-hover, var(--assistant-orb-ring, #4b6))
+  );
+  --scale: 0.95;
+  --orb-opacity: 0.9;
+}
+
+@keyframes ping {
+  from {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
