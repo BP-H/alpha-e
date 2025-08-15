@@ -72,9 +72,7 @@ export default function RadialMenu(props: RadialMenuProps) {
   } = props;
 
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [step, setStep] = useState<"root" | "react" | "react-all" | "create">(
-    "root"
-  );
+  const [subMenu, setSubMenu] = useState<"react" | "create" | null>(null);
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
@@ -84,7 +82,7 @@ export default function RadialMenu(props: RadialMenuProps) {
 
   useEffect(() => {
     menuRef.current?.focus();
-    setStep("root");
+    setSubMenu(null);
     setIndex(0);
   }, []);
 
@@ -96,7 +94,7 @@ export default function RadialMenu(props: RadialMenuProps) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const radius = step === "root" ? rootRadius : subRadius;
+    const radius = subMenu ? subRadius : rootRadius;
     const pad = radius + 20; // button radius + margin
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -123,9 +121,7 @@ export default function RadialMenu(props: RadialMenuProps) {
     else rot = 0;
 
     setAngleOffset(rot);
-  }, [center, step]);
-
-  const PAGE_SIZE = 8;
+  }, [center, subMenu]);
 
   const menuConfig = {
     root: [
@@ -157,7 +153,7 @@ export default function RadialMenu(props: RadialMenuProps) {
         },
       },
     ],
-    react: emojis.slice(0, PAGE_SIZE).map((e, i) => ({
+    react: emojis.map((e, i) => ({
       id: `emoji-${i}`,
       label: `React ${e}`,
       icon: e,
@@ -166,21 +162,6 @@ export default function RadialMenu(props: RadialMenuProps) {
         onClose();
       },
     })),
-    reactAll: emojis.map((e, i) => ({
-      id: `emoji-all-${i}`,
-      label: `React ${e}`,
-      icon: e,
-      action: () => {
-        onReact(e);
-        onClose();
-      },
-    })),
-    moreReact: {
-      id: "more",
-      label: "More reactions",
-      icon: "…",
-      next: "react-all" as const,
-    },
     create: [
       {
         id: "comment",
@@ -212,33 +193,22 @@ export default function RadialMenu(props: RadialMenuProps) {
     ],
   } as const;
 
-  const rootItems = menuConfig.root;
-  const baseReactItems = menuConfig.react;
-  const reactItems =
-    emojis.length > PAGE_SIZE
-      ? [...baseReactItems, menuConfig.moreReact]
-      : baseReactItems;
-  const reactAllItems = menuConfig.reactAll;
-  const createItems = menuConfig.create;
-
   const ringItems =
-    step === "root"
-      ? rootItems
-      : step === "react"
-      ? reactItems
-      : step === "react-all"
-      ? reactAllItems
-      : createItems;
+    subMenu === null
+      ? menuConfig.root
+      : subMenu === "react"
+      ? menuConfig.react
+      : menuConfig.create;
 
   const centerItem =
-    step === "root"
+    subMenu === null
       ? { id: "close", label: "Close menu", icon: "✖️", action: onClose }
       : {
           id: "back",
           label: "Go back",
           icon: "⬅️",
           action: () => {
-            setStep("root");
+            setSubMenu(null);
             setIndex(0);
           },
         };
@@ -263,7 +233,7 @@ export default function RadialMenu(props: RadialMenuProps) {
       } else {
         const item = ringItems[index] as any;
         if (item.next) {
-          setStep(item.next);
+          setSubMenu(item.next);
           setIndex(0);
         } else {
           item.action();
@@ -271,8 +241,8 @@ export default function RadialMenu(props: RadialMenuProps) {
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
-      if (step !== "root") {
-        setStep("root");
+      if (subMenu !== null) {
+        setSubMenu(null);
         setIndex(0);
       } else {
         onClose();
@@ -327,7 +297,7 @@ export default function RadialMenu(props: RadialMenuProps) {
         whileFocus={reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }}
         onClick={() => {
           if (item.next) {
-            setStep(item.next);
+            setSubMenu(item.next);
             setIndex(0);
           } else {
             item.action();
@@ -341,7 +311,7 @@ export default function RadialMenu(props: RadialMenuProps) {
 
   const activeId =
     index === ringItems.length
-      ? step === "root"
+      ? subMenu === null
         ? "close"
         : "back"
       : ringItems[index]?.id || "";
@@ -368,7 +338,7 @@ export default function RadialMenu(props: RadialMenuProps) {
             item,
             i,
             i === index,
-            step === "root" ? rootRadius : subRadius,
+            subMenu === null ? rootRadius : subRadius,
             ringItems.length
           )
         )}
@@ -376,9 +346,9 @@ export default function RadialMenu(props: RadialMenuProps) {
 
       <AnimatePresence mode="wait">
         <motion.button
-          key={step === "root" ? "close" : "back"}
+          key={subMenu === null ? "close" : "back"}
           id={
-            step === "root"
+            subMenu === null
               ? "assistant-menu-item-close"
               : "assistant-menu-item-back"
           }
@@ -417,7 +387,7 @@ export default function RadialMenu(props: RadialMenuProps) {
           }
           onClick={centerItem.action}
         >
-          {step === "root" ? "✖️" : "⬅️"}
+          {subMenu === null ? "✖️" : "⬅️"}
         </motion.button>
       </AnimatePresence>
     </div>
