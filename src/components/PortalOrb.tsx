@@ -43,6 +43,9 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
   }, [pos]);
 
   function withinSafe(x: number, y: number) {
+    if (typeof window === "undefined") {
+      return { x, y };
+    }
     const w = window.innerWidth;
     const h = window.innerHeight;
     const size = 64;
