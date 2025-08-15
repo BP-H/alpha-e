@@ -10,14 +10,24 @@
   --chip-ink: #fff;
   --radius: 14px;
   --shadow: 0 10px 30px rgba(11,15,26,.08), 0 1px 0 rgba(255,255,255,.7) inset;
-  --rm-bg: linear-gradient(145deg, rgba(14,16,22,.85), rgba(14,16,22,.65));
-  --rm-bg-hover: linear-gradient(145deg, rgba(14,16,22,.9), rgba(14,16,22,.7));
-  --rm-border: rgba(255,255,255,.2);
-  --rm-shadow: 0 8px 20px rgba(11,15,26,.25);
-  --rm-shadow-hover: 0 12px 28px rgba(11,15,26,.35);
-  --rm-blur: 14px;
-  --rm-ink: #fff;
-  --rm-ring: #ff74de;
+  --orb-bg: linear-gradient(145deg, rgba(14,16,22,.85), rgba(14,16,22,.65));
+  --orb-bg-hover: linear-gradient(145deg, rgba(14,16,22,.9), rgba(14,16,22,.7));
+  --orb-border: rgba(255,255,255,.2);
+  --orb-shadow: 0 8px 20px rgba(11,15,26,.25);
+  --orb-shadow-hover: 0 12px 28px rgba(11,15,26,.35);
+  --orb-blur: 14px;
+  --orb-ink: #fff;
+  --orb-ring: #ff74de;
+
+  /* Deprecated rm variables for backwards compatibility */
+  --rm-bg: var(--orb-bg);
+  --rm-bg-hover: var(--orb-bg-hover);
+  --rm-border: var(--orb-border);
+  --rm-shadow: var(--orb-shadow);
+  --rm-shadow-hover: var(--orb-shadow-hover);
+  --rm-blur: var(--orb-blur);
+  --rm-ink: var(--orb-ink);
+  --rm-ring: var(--orb-ring);
 }
 
 *{ box-sizing:border-box; }
