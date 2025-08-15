@@ -10,6 +10,14 @@
   --chip-ink: #fff;
   --radius: 14px;
   --shadow: 0 10px 30px rgba(11,15,26,.08), 0 1px 0 rgba(255,255,255,.7) inset;
+  --rm-bg: linear-gradient(145deg, rgba(14,16,22,.85), rgba(14,16,22,.65));
+  --rm-bg-hover: linear-gradient(145deg, rgba(14,16,22,.9), rgba(14,16,22,.7));
+  --rm-border: rgba(255,255,255,.2);
+  --rm-shadow: 0 8px 20px rgba(11,15,26,.25);
+  --rm-shadow-hover: 0 12px 28px rgba(11,15,26,.35);
+  --rm-blur: 14px;
+  --rm-ink: #fff;
+  --rm-ring: #ff74de;
 }
 
 *{ box-sizing:border-box; }

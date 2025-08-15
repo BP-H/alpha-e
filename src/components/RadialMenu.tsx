@@ -197,7 +197,7 @@ export default function RadialMenu({
           x,
           y,
           scale: 1,
-          boxShadow: active ? "0 0 0 2px #ff74de" : "none",
+          boxShadow: active ? "0 0 0 2px var(--rm-ring)" : "none",
         }}
         exit={
           reduceMotion
@@ -208,7 +208,12 @@ export default function RadialMenu({
           duration: reduceMotion ? 0 : 0.25,
           ease: [0.4, 0, 0.2, 1],
         }}
-        whileHover={reduceMotion ? undefined : { scale: 1.1 }}
+        whileHover={
+          reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }
+        }
+        whileFocus={
+          reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }
+        }
         onClick={() => {
           if (item.next) {
             setStep(item.next);
@@ -266,7 +271,9 @@ export default function RadialMenu({
             y: 0,
             scale: 1,
             boxShadow:
-              index === currentItems.length ? "0 0 0 2px #ff74de" : "none",
+              index === currentItems.length
+                ? "0 0 0 2px var(--rm-ring)"
+                : "none",
           }}
           exit={
             reduceMotion
@@ -277,7 +284,12 @@ export default function RadialMenu({
             duration: reduceMotion ? 0 : 0.25,
             ease: [0.4, 0, 0.2, 1],
           }}
-          whileHover={reduceMotion ? undefined : { scale: 1.1 }}
+          whileHover={
+            reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }
+          }
+          whileFocus={
+            reduceMotion ? undefined : { scale: 1.06, opacity: 0.95 }
+          }
           onClick={() => {
             if (step === "root") {
               onClose();
