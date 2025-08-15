@@ -12,8 +12,13 @@ const PRELOAD_PX = 800;
 export default function Feed() {
   const posts = useFeedStore((s) => s.posts);
   const [limit, setLimit] = useState(PAGE);
+  const limitRef = useRef(limit);
   const visible = useMemo(() => posts.slice(0, limit), [posts, limit]);
   const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    limitRef.current = limit;
+  }, [limit]);
 
   // infinite scroll
   useEffect(() => {
@@ -21,12 +26,12 @@ export default function Feed() {
     if (!el) return;
     const onScroll = () => {
       const near = el.scrollTop + el.clientHeight > el.scrollHeight - PRELOAD_PX;
-      if (near && limit < posts.length) setLimit((n) => n + PAGE);
+      if (near && limitRef.current < posts.length) setLimit((n) => n + PAGE);
     };
     el.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => el.removeEventListener("scroll", onScroll);
-  }, [limit, posts.length]);
+  }, [posts.length]);
 
   // feed:hover (nearest post around viewport mid) — only if we have posts
   useEffect(() => {
