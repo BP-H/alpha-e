@@ -1,186 +1,197 @@
-/* src/components/feed/postcard.css
-   "Glass tank" layout: top info bar + media + bottom actions.
-   No overlay, no gaps between media and bars. Tiny outer radius.
-*/
+/* Frosted‑glass, mobile‑first, icon‑only bars OUTSIDE the media.
+   Tiny fillet everywhere (4px). Carousel for multi‑image posts. */
 
 :root{
-  --pc-stroke: rgba(255,255,255,.10);
-  --pc-frost: rgba(17,19,29,.58);
-  --pc-frost-2: rgba(17,19,29,.72);
-  --pc-text: #eef2ff;
-  --pc-muted: #a1a7b3;
+  --pc-radius: 4px;                 /* tiny fillet */
+  --pc-frame-pad: 8px;              /* thin glass line around content */
+  --pc-glass: rgba(255,255,255,.55);
+  --pc-stroke: rgba(0,0,0,.08);
+  --pc-ink: #0b0f19;
+  --pc-muted: rgba(0,0,0,.45);
+  --pc-chip-bg: rgba(255,255,255,.38);
+  --pc-chip-bd: rgba(0,0,0,.14);
   --pc-ring: rgba(106,115,255,.22);
-  --pc-radius: 4px;     /* tiny outer fillet */
-  --pc-gap: 6px;        /* thin glass line on sides (tank padding) */
-  --pc-icon: #ffffff;
-  --pc-chip: rgba(255,255,255,.06);
-  --pc-chip-bd: rgba(255,255,255,.12);
+  --pc-shadow: 0 14px 34px rgba(0,0,0,.28);
 }
 
-/* article wrapper so each card sits in the stream */
+/* Card root fills feed column; glass frame gives the 'green border' from the sketch */
 .pc{
   width: 100%;
-  margin: 0 auto;
-  background: transparent;
+  margin: 12px auto 16px;
 }
-.pc + .pc{ margin-top: 12px; }
-
-/* GLASS TANK */
-.pc-tank{
-  background: var(--pc-frost);
+.pc-frame{
+  padding: var(--pc-frame-pad);
+  border-radius: calc(var(--pc-radius) + 2px);
   border: 1px solid var(--pc-stroke);
+  background: var(--pc-glass);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: var(--pc-shadow);
+}
+
+/* TOP / BOTTOM glass bars — no gap to media */
+.pc-topbar, .pc-botbar{
+  display:flex; align-items:center; gap:12px;
+  height: 52px; padding: 8px 10px;
   border-radius: var(--pc-radius);
-  padding: var(--pc-gap);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  backdrop-filter: blur(12px) saturate(140%);
-  box-shadow: 0 12px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
-}
-
-/* Top info bar – full width, no gap to media below */
-.pc-topbar{
-  display:flex; align-items:center; gap:10px;
-  height:52px;
-  padding:8px 12px;
-  background: var(--pc-frost-2);
   border:1px solid var(--pc-stroke);
-  border-radius: 10px;
-  color: var(--pc-text);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
-  margin: 0 0 0 0; /* no gap to media */
+  background: var(--pc-glass);
+  color: var(--pc-ink);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
 }
+.pc-topbar{ margin-bottom: 0; }
+.pc-botbar{ margin-top: 0; justify-content: space-between; }
 
-/* Media area - shows the thin glass "frame" on sides via tank padding */
-.pc-media-wrap{ margin: 0; }
-
-.pc-media{
-  display:block;
-  width:100%;
-  height: auto;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  background:#0f1117;
-  border-radius: 8px;
-  opacity: 0;                  /* fade in onload */
-  transition: opacity .25s ease;
-}
-
-/* Carousel */
-.pc-carousel{
-  display:flex; overflow-x:auto; overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  gap:0;
-  border-radius: 8px;
-}
-.pc-carousel::-webkit-scrollbar{ display:none; }
-.pc-carousel{ scrollbar-width: none; }
-.pc-carousel > img{
-  min-width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  scroll-snap-align: start;
-  background:#0f1117;
-  opacity:0; transition: opacity .25s ease;
-}
-.pc-carousel > img[style*="opacity: 1"]{ opacity:1; }
-
-/* Bottom actions bar – avatar left, 4 icons right, dots on far right */
-.pc-botbar{
-  display:flex; align-items:center;
-  gap:12px;
-  height:56px; padding:8px 10px;
-  background: var(--pc-frost-2);
-  border:1px solid var(--pc-stroke);
-  border-radius: 10px;
-  color: var(--pc-text);
-  margin: 0; /* no gap to media */
-}
-
-.pc-actions{
-  display:flex; align-items:center; gap:8px;
-  margin-left:auto;
-}
-
-/* Avatar (also used in topbar) */
+/* Avatar (emoji placeholder variant) */
 .pc-ava{
-  width:38px; height:38px; border-radius:999px; overflow:hidden;
-  border:1px solid var(--pc-stroke); background:#10131e; flex:0 0 auto;
-  cursor: pointer;
+  width:38px; height:38px; border-radius:999px;
+  border:1px solid var(--pc-stroke);
+  display:grid; place-items:center; background:#f0f2f5;
+  color:#111; flex:0 0 auto; cursor: pointer;
 }
-.pc-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
+.pc-ava-emoji span{ font-size:20px; line-height:1;}
 
 /* Meta */
 .pc-meta{ display:flex; flex-direction:column; line-height:1.1; min-width:0; }
-.pc-handle{ font-weight:900; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.pc-sub{ font-size:12px; color:var(--pc-muted); opacity:.95; }
+.pc-handle{ font-weight:900; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--pc-ink); }
+.pc-sub{ font-size:12px; color:var(--pc-muted); }
 .pc-title{
   margin-left:auto; padding:6px 10px; border-radius:10px;
-  background: rgba(255,255,255,.08); border: 1px solid var(--pc-stroke); font-weight:800;
+  background: rgba(0,0,0,.03);
+  border:1px solid var(--pc-stroke);
+  font-weight:800; color:var(--pc-ink);
 }
 
-/* Icon chips */
+/* MEDIA — sits between bars, no extra spacing, inherits frame padding left/right. */
+.pc-media{
+  margin: 8px 0;         /* visual breathing inside the frame, but bars touch it vertically */
+  margin-top: 0;         /* NO GAP to topbar */
+  margin-bottom: 0;      /* NO GAP to botbar */
+  position: relative;
+  border-radius: var(--pc-radius);
+  overflow: hidden;
+  background:#0f1117; /* fallback when media loading */
+}
+
+/* Common media elements fill the box */
+.pc-media > img,
+.pc-media > video,
+.pc-media > iframe,
+.pc-media > model-viewer{
+  display:block; width:100%; height:auto; aspect-ratio: 4 / 5; object-fit: cover;
+  opacity: 0; transition: opacity .25s ease;
+}
+.pc-media > video{ pointer-events:auto; }
+
+/* CAROUSEL */
+.pc-carousel{ position:relative; overflow:hidden; border-radius: var(--pc-radius); }
+.pc-track{
+  display:flex; width:100%; height:100%;
+  transition: transform .25s ease;
+}
+.pc-slide{ flex: 0 0 100%; width:100%; }
+.pc-slide img{ width:100%; height:auto; aspect-ratio:4/5; object-fit:cover; opacity:0; transition:opacity .25s ease; }
+.pc-dots{
+  position:absolute; right:10px; bottom:10px;
+  display:flex; gap:8px; pointer-events:auto;
+}
+.pc-dot{
+  width:12px; height:12px; border-radius:999px;
+  border:1px solid var(--pc-stroke); background: rgba(255,255,255,.4);
+}
+.pc-dot.on{ background:#fff; }
+
+/* Action chips (icon‑only, stroke icons) */
+.pc-actions{ display:flex; align-items:center; gap:8px; }
 .pc-act{
-  display:grid; place-items:center;
   width:38px; height:38px; border-radius:999px;
-  background: var(--pc-chip); color: var(--pc-icon);
-  border:1px solid var(--pc-chip-bd); cursor:pointer;
-  transition: transform .12s, box-shadow .18s, border-color .18s;
+  display:grid; place-items:center;
+  background:var(--pc-chip-bg); border:1px solid var(--pc-chip-bd);
+  color: var(--pc-ink); cursor:pointer;
+  transition: transform .12s ease, box-shadow .18s ease, border-color .18s ease;
 }
 .pc-act:hover{
   transform: translateY(-1px);
   border-color: rgba(106,115,255,.55);
-  box-shadow: 0 0 0 2px var(--pc-ring) inset, 0 10px 24px rgba(0,0,0,.25);
+  box-shadow: 0 0 0 2px var(--pc-ring) inset;
 }
-.pc-act .ico{ width:22px; height:22px; display:block; }
+.pc-ico{ width:18px; height:18px; display:block; }
 
-/* dots (carousel indicators) on far right */
-.pc-dots{ display:flex; align-items:center; gap:8px; margin-left:8px; }
-.pc-dot{
-  width:10px; height:10px; border-radius:999px;
-  background: rgba(255,255,255,.35);
-  border:1px solid var(--pc-stroke);
-  cursor:pointer;
-}
-.pc-dot.on{ background:#fff; }
-
-/* Drawer (frosted) */
+/* Drawer / bottom sheet (light frosted) */
 .pc-drawer{
-  max-height:0; overflow:hidden;
-  transition:max-height .25s ease, opacity .18s ease, transform .18s ease;
-  opacity:0; transform: translateY(-4px);
-  background: rgba(14,16,24,.65);
-  border-top:1px solid var(--pc-stroke);
-  color:var(--pc-text);
+  max-height:0; overflow:hidden; opacity:0; transform: translateY(-4px);
+  transition: max-height .25s ease, opacity .18s ease, transform .18s ease;
 }
-.pc.dopen .pc-drawer{ max-height: 560px; opacity:1; transform:none; }
+.pc-drawer.open{ max-height: 560px; opacity:1; transform:none; }
 
-.pc-drawer-inner{ padding:12px 14px; }
-.pc-emoji-bar{ display:flex; flex-wrap:wrap; gap:6px; }
-.pc-emoji{
-  height:34px; min-width:34px; padding:0 6px; border-radius:999px;
-  display:grid; place-items:center; font-size:18px; cursor:pointer;
-  background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+.pc-sheet{
+  margin-top:10px;
+  border-radius: var(--pc-radius);
+  border:1px solid var(--pc-stroke);
+  background: var(--pc-glass);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  color: var(--pc-ink);
 }
-.pc-section{ margin-top:12px; }
-.pc-reactions{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-.pc-re{ font-size:18px; }
+.pc-sheet-head{
+  display:flex; align-items:center; gap:8px; padding:10px 12px;
+  border-bottom:1px solid var(--pc-stroke);
+}
+.pc-sheet-dot{ width:10px; height:10px; border-radius:999px; background:linear-gradient(90deg,#ff74de,#7c83ff); }
+.pc-sheet-title{ font-weight:800; }
+.pc-sheet-close{
+  margin-left:auto; height:28px; padding:0 10px; border-radius:8px;
+  background: rgba(0,0,0,.04); border:1px solid var(--pc-stroke); color:var(--pc-ink);
+}
+
+/* Emoji grid */
+.pc-emoji-grid{
+  display:grid; grid-template-columns: repeat(8,minmax(0,1fr));
+  gap:8px; padding:12px;
+}
+.pc-emoji{
+  height:38px; border-radius:10px; border:1px solid var(--pc-stroke);
+  background: rgba(255,255,255,.55);
+  display:grid; place-items:center; font-size:18px; cursor:pointer;
+}
+.pc-emoji:hover{ box-shadow: 0 0 0 2px var(--pc-ring) inset; }
+
+/* Comments UI */
+.pc-comment-form{ display:flex; gap:8px; padding:12px; }
+.pc-input{
+  flex:1; height:38px; border-radius:10px; padding:0 10px; outline:none;
+  background: rgba(255,255,255,.48); border:1px solid var(--pc-stroke); color:var(--pc-ink);
+}
+.pc-send{
+  height:38px; padding:0 12px; border-radius:10px;
+  background: rgba(255,255,255,.65); border:1px solid var(--pc-stroke);
+  color: var(--pc-ink); cursor:pointer;
+}
+
+/* Sections for reactions/comments lists */
+.pc-section{ padding: 8px 12px 12px; }
+.pc-reactions{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; font-size:20px; }
 .pc-comments{
-  list-style:none; margin:8px 0 0; padding:0; display:grid; gap:6px;
+  margin:8px 0 0; padding:0; list-style:none; display:grid; gap:8px;
 }
 .pc-comments li{
-  background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-  padding:8px 10px; border-radius:10px; opacity:.95;
+  background: rgba(0,0,0,.04); border:1px solid var(--pc-stroke);
+  border-radius:10px; padding:8px 10px; color:var(--pc-ink);
 }
-.pc-addcmt{
-  display:flex; gap:8px; margin-top:10px;
-}
-.pc-addcmt input{
-  flex:1; height:36px; padding:0 10px; border-radius:10px; outline:none;
-  background: rgba(16,18,28,.65); border:1px solid rgba(255,255,255,.16); color:#fff;
-}
-.pc-addcmt button{
-  height:36px; padding:0 12px; border-radius:10px; cursor:pointer;
-  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color:#fff;
+.pc-hint{ font-size:13px; color:var(--pc-muted); padding: 8px 12px 0; }
+.pc-remix{ padding:8px 12px 12px; }
+.pc-share{ padding:8px 12px 12px; }
+.pc-remix-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.pc-chip{
+  height:32px; padding:0 10px; border-radius:999px; cursor:pointer;
+  border:1px solid var(--pc-stroke); background: rgba(255,255,255,.55); color:var(--pc-ink);
 }
 .pc-empty{ opacity:.7; }
+
+/* Accessibility & motion */
+@media (prefers-reduced-motion: reduce){
+  .pc-track{ transition: none; }
+  .pc-act:hover{ transform: none; }
+}
