@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 interface RadialMenuProps {
   center: { x: number; y: number };
@@ -28,6 +29,7 @@ export default function RadialMenu({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [step, setStep] = useState<"root" | "react" | "create">("root");
   const [index, setIndex] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     menuRef.current?.focus();
@@ -126,7 +128,7 @@ export default function RadialMenu({
     const x = radius * Math.cos(rad) - 20;
     const y = radius * Math.sin(rad) - 20;
     return (
-      <button
+      <motion.button
         key={item.id}
         id={`assistant-menu-item-${item.id}`}
         role="menuitem"
@@ -136,8 +138,15 @@ export default function RadialMenu({
           ...rbtn,
           left: x,
           top: y,
-          boxShadow: active ? "0 0 0 2px #ff74de" : undefined,
         }}
+        initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        animate={{
+          scale: 1,
+          opacity: 1,
+          boxShadow: active ? "0 0 0 2px #ff74de" : "none",
+        }}
+        exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.2 }}
         onClick={() => {
           if (item.next) {
             setStep(item.next);
@@ -148,7 +157,7 @@ export default function RadialMenu({
         }}
       >
         {item.icon}
-      </button>
+      </motion.button>
     );
   }
 
@@ -168,33 +177,48 @@ export default function RadialMenu({
       aria-activedescendant={`assistant-menu-item-${activeId}`}
       style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
     >
-      {step === "root" &&
-        rootItems.map((item, i) =>
-          renderItem(item, i, rootAngles[i], i === index, 74)
-        )}
-      {step !== "root" && (
-        <button
-          id="assistant-menu-item-back"
-          role="menuitem"
-          tabIndex={-1}
-          aria-label="Back"
-          style={{ ...rbtn, left: -20, top: -20 }}
-          onClick={() => {
-            setStep("root");
-            setIndex(0);
-          }}
-        >
-          ⬅️
-        </button>
+      {step === "root" && (
+        <AnimatePresence>
+          {rootItems.map((item, i) =>
+            renderItem(item, i, rootAngles[i], i === index, 74)
+          )}
+        </AnimatePresence>
       )}
-      {step === "react" &&
-        reactItems.map((item, i) =>
-          renderItem(item, i, reactAngles[i], i === index, 120)
+      <AnimatePresence>
+        {step !== "root" && (
+          <motion.button
+            id="assistant-menu-item-back"
+            role="menuitem"
+            tabIndex={-1}
+            aria-label="Back"
+            style={{ ...rbtn, left: -20, top: -20 }}
+            initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
+            onClick={() => {
+              setStep("root");
+              setIndex(0);
+            }}
+          >
+            ⬅️
+          </motion.button>
         )}
-      {step === "create" &&
-        createItems.map((item, i) =>
-          renderItem(item, i, createAngles[i], i === index, 120)
-        )}
+      </AnimatePresence>
+      {step === "react" && (
+        <AnimatePresence>
+          {reactItems.map((item, i) =>
+            renderItem(item, i, reactAngles[i], i === index, 120)
+          )}
+        </AnimatePresence>
+      )}
+      {step === "create" && (
+        <AnimatePresence>
+          {createItems.map((item, i) =>
+            renderItem(item, i, createAngles[i], i === index, 120)
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 }

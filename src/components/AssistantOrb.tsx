@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
 import RadialMenu from "./RadialMenu";
+import { motion, useReducedMotion } from "framer-motion";
 
 /**
  * Assistant Orb — circular quick menu + 60fps drag + voice.
@@ -86,6 +87,7 @@ export default function AssistantOrb() {
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
   const [petal, setPetal] = useState<null | "comment" | "remix" | "share">(null);
+  const reduceMotion = useReducedMotion();
 
   // gestures
   const movedRef = useRef(false);
@@ -454,8 +456,6 @@ export default function AssistantOrb() {
   };
   const ringStyle: React.CSSProperties = {
     position: "absolute", inset: -6, borderRadius: 999, pointerEvents: "none",
-    boxShadow: mic ? "0 0 0 10px rgba(255,116,222,.16)" : "inset 0 0 24px rgba(255,255,255,.55)",
-    transition: "box-shadow .25s ease",
   };
   const toastBoxStyle: React.CSSProperties = {
     position: "fixed",
@@ -528,8 +528,18 @@ export default function AssistantOrb() {
         onMouseLeave={() => { if (!dragging) setMenuOpen(false); }}
         onKeyDown={handleOrbKeyDown}
       >
-        <div style={coreStyle} />
-        <div style={ringStyle} />
+        <motion.div
+          style={{ position: "relative", width: "100%", height: "100%" }}
+          animate={{ scale: reduceMotion ? 1 : menuOpen || mic ? 1.1 : 1 }}
+          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 20 }}
+        >
+          <div style={coreStyle} />
+          <motion.div
+            style={ringStyle}
+            animate={{ boxShadow: mic ? "0 0 0 10px rgba(255,116,222,.16)" : "inset 0 0 24px rgba(255,255,255,.55)" }}
+            transition={{ duration: reduceMotion ? 0 : 0.25 }}
+          />
+        </motion.div>
       </button>
 
       {/* Radial menu */}
