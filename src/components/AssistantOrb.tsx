@@ -85,6 +85,8 @@ export default function AssistantOrb() {
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
   const [petal, setPetal] = useState<null | "react" | "comment" | "remix" | "share">(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menuIndex, setMenuIndex] = useState(0);
 
   // gestures
   const movedRef = useRef(false);
@@ -496,6 +498,69 @@ export default function AssistantOrb() {
     backdropFilter: "blur(8px) saturate(140%)",
   };
 
+  function handleOrbKeyDown(e: React.KeyboardEvent) {
+    const k = e.key.toLowerCase();
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setMenuOpen(v => !v);
+    } else if (k === "v") {
+      e.preventDefault();
+      mic ? stopListening() : startListening();
+    } else if (k === "r") {
+      e.preventDefault();
+      setPetal("react"); setMenuOpen(false);
+    } else if (k === "c") {
+      e.preventDefault();
+      setPetal("comment"); setMenuOpen(false);
+    } else if (k === "m") {
+      e.preventDefault();
+      setPetal("remix"); setMenuOpen(false);
+    } else if (k === "s") {
+      e.preventDefault();
+      setPetal("share"); setMenuOpen(false);
+    } else if (e.key === "Escape") {
+      setMenuOpen(false); setPetal(null); stopListening();
+    }
+  }
+
+  function handleMenuKey(e: React.KeyboardEvent) {
+    const items = [
+      btnChatRef.current,
+      btnReactRef.current,
+      btnCommentRef.current,
+      btnRemixRef.current,
+      btnProfileRef.current,
+    ].filter(Boolean) as HTMLButtonElement[];
+    if (!items.length) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+      e.preventDefault();
+      const next = (menuIndex + 1) % items.length;
+      setMenuIndex(next);
+      items[next]?.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+      e.preventDefault();
+      const next = (menuIndex - 1 + items.length) % items.length;
+      setMenuIndex(next);
+      items[next]?.focus();
+    } else if (e.key === "Escape") {
+      setMenuOpen(false);
+      setPetal(null);
+      orbRef.current?.focus();
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      items[menuIndex]?.click();
+    }
+  }
+
+  useEffect(() => {
+    if (menuOpen) {
+      setMenuIndex(0);
+      btnChatRef.current?.focus();
+    } else {
+      orbRef.current?.focus();
+    }
+  }, [menuOpen]);
+
   return (
     <>
       <style>{keyframes}</style>
@@ -505,6 +570,8 @@ export default function AssistantOrb() {
         aria-label="Assistant orb"
         title="Tap for quick menu • Hold/drag to talk • Double‑click to talk"
         style={orbStyle}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
@@ -514,6 +581,7 @@ export default function AssistantOrb() {
         onDoubleClick={onDoubleClick}
         onMouseEnter={() => { setMenuOpen(true); requestAnimationFrame(updateAnchors); }}
         onMouseLeave={() => { if (!dragging) setMenuOpen(false); }}
+        onKeyDown={handleOrbKeyDown}
       >
         <div style={coreStyle} />
         <div style={ringStyle} />
@@ -521,15 +589,74 @@ export default function AssistantOrb() {
 
       {/* Radial menu */}
       {menuOpen && !dragging && (
-        <>
-          <button ref={btnChatRef} style={rbtn} aria-label="Chat" title="Chat" onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}>💬</button>
-          <button ref={btnReactRef} style={rbtn} aria-label="React" title="React" onClick={() => setPetal("react")}>👏</button>
-          <button ref={btnCommentRef} style={rbtn} aria-label="Comment" title="Comment" onClick={() => setPetal("comment")}>✍️</button>
-          <button ref={btnRemixRef} style={rbtn} aria-label="Remix" title="Remix" onClick={() => setPetal("remix")}>🎬</button>
-          <button ref={btnProfileRef} style={{ ...rbtn, padding: 0, overflow: "hidden" }} aria-label="Profile" title="Profile" onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}>
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label="Assistant actions"
+          onKeyDown={handleMenuKey}
+          aria-activedescendant={`assistant-menu-item-${menuIndex}`}
+        >
+          <button
+            ref={btnChatRef}
+            style={rbtn}
+            aria-label="Chat"
+            title="Chat"
+            role="menuitem"
+            tabIndex={menuIndex === 0 ? 0 : -1}
+            id="assistant-menu-item-0"
+            onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}
+          >
+            💬
+          </button>
+          <button
+            ref={btnReactRef}
+            style={rbtn}
+            aria-label="React"
+            title="React"
+            role="menuitem"
+            tabIndex={menuIndex === 1 ? 0 : -1}
+            id="assistant-menu-item-1"
+            onClick={() => setPetal("react")}
+          >
+            👏
+          </button>
+          <button
+            ref={btnCommentRef}
+            style={rbtn}
+            aria-label="Comment"
+            title="Comment"
+            role="menuitem"
+            tabIndex={menuIndex === 2 ? 0 : -1}
+            id="assistant-menu-item-2"
+            onClick={() => setPetal("comment")}
+          >
+            ✍️
+          </button>
+          <button
+            ref={btnRemixRef}
+            style={rbtn}
+            aria-label="Remix"
+            title="Remix"
+            role="menuitem"
+            tabIndex={menuIndex === 3 ? 0 : -1}
+            id="assistant-menu-item-3"
+            onClick={() => setPetal("remix")}
+          >
+            🎬
+          </button>
+          <button
+            ref={btnProfileRef}
+            style={{ ...rbtn, padding: 0, overflow: "hidden" }}
+            aria-label="Profile"
+            title="Profile"
+            role="menuitem"
+            tabIndex={menuIndex === 4 ? 0 : -1}
+            id="assistant-menu-item-4"
+            onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}
+          >
             <img src={ctxPost?.authorAvatar || "/avatar.jpg"} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </button>
-        </>
+        </div>
       )}
 
       {/* toast + interim */}
