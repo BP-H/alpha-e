@@ -82,12 +82,18 @@ function Portal() {
   );
 }
 
-function makeLabelTexture(name: string, color = "#2eff7a") {
+function makeLabelTexture(
+  name: string,
+  color = "#2eff7a"
+): THREE.Texture | undefined {
   const canvas = document.createElement("canvas");
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = 256 * dpr;
   canvas.height = 128 * dpr;
-  const g = canvas.getContext("2d")!;
+  const g = canvas.getContext("2d");
+  if (!g) {
+    return;
+  }
   g.scale(dpr, dpr);
 
   g.fillStyle = "rgba(10, 20, 10, 0.1)";
