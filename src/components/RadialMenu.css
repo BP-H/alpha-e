@@ -1,3 +1,18 @@
+:root {
+  --rm-bg: linear-gradient(145deg,
+      color-mix(in srgb, var(--orb-color, #ff74de) 8%, rgba(14,16,22,.85) 92%),
+      color-mix(in srgb, var(--orb-color, #ff74de) 3%, rgba(14,16,22,.65) 97%));
+  --rm-bg-hover: linear-gradient(145deg,
+      color-mix(in srgb, var(--orb-color, #ff74de) 12%, rgba(14,16,22,.9) 88%),
+      color-mix(in srgb, var(--orb-color, #ff74de) 5%, rgba(14,16,22,.7) 95%));
+  --rm-border: color-mix(in srgb, var(--orb-color, #ff74de) 25%, rgba(255,255,255,.2));
+  --rm-shadow: 0 8px 20px rgba(11,15,26,.25);
+  --rm-shadow-hover: 0 12px 28px rgba(11,15,26,.35);
+  --rm-blur: var(--orb-blur, 14px);
+  --rm-ink: #fff;
+  --rm-ring: var(--orb-color, #ff74de);
+}
+
 .rbtn {
   position: absolute;
   width: 40px;
@@ -20,6 +35,11 @@
 .rbtn:focus-visible {
   background: var(--rm-bg-hover);
   box-shadow: var(--rm-shadow-hover);
+}
+
+.rbtn:active {
+  transform: scale(.9);
+  box-shadow: var(--rm-shadow);
 }
 
 .rm-label {
