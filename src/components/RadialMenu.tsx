@@ -13,6 +13,7 @@ interface RadialMenuProps {
   onProfile: () => void;
   avatarUrl: string;
   emojis: string[];
+  items?: { id: string; label: string; icon: React.ReactNode; action: () => void }[];
 }
 
 export default function RadialMenu({
@@ -26,7 +27,12 @@ export default function RadialMenu({
   onProfile,
   avatarUrl,
   emojis,
+  items,
 }: RadialMenuProps) {
+  if (items && items.length) {
+    return <SimpleRadialMenu center={center} items={items} onClose={onClose} />;
+  }
+
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [step, setStep] = useState<"root" | "react" | "react-all" | "create">("root");
   const [index, setIndex] = useState(0);
@@ -311,6 +317,96 @@ export default function RadialMenu({
           )}
         </AnimatePresence>
       )}
+    </div>
+  );
+}
+
+function SimpleRadialMenu({
+  center,
+  items,
+  onClose,
+}: {
+  center: { x: number; y: number };
+  items: { id: string; label: string; icon: React.ReactNode; action: () => void }[];
+  onClose: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    menuRef.current?.focus();
+    setIndex(0);
+  }, []);
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+      e.preventDefault();
+      const next = (index + 1) % items.length;
+      setIndex(next);
+      itemRefs.current[next]?.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+      e.preventDefault();
+      const next = (index - 1 + items.length) % items.length;
+      setIndex(next);
+      itemRefs.current[next]?.focus();
+    } else if (e.key === "Escape") {
+      onClose();
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      items[index]?.action();
+    }
+  }
+
+  return (
+    <div
+      className="radial-menu"
+      role="menu"
+      tabIndex={-1}
+      ref={menuRef}
+      onKeyDown={handleKeyDown}
+      aria-activedescendant={`simple-radial-item-${items[index]?.id}`}
+      style={{
+        position: "absolute",
+        left: center.x,
+        top: center.y,
+        pointerEvents: "none",
+      }}
+    >
+      {items.map((item, i) => {
+        const angle = (360 / items.length) * i - 90;
+        const rad = (angle * Math.PI) / 180;
+        const iconX = 94 * Math.cos(rad);
+        const iconY = 94 * Math.sin(rad);
+        const labelX = 140 * Math.cos(rad);
+        const labelY = 140 * Math.sin(rad);
+        return (
+          <React.Fragment key={item.id}>
+            <button
+              className="rbtn"
+              onClick={item.action}
+              role="menuitem"
+              ref={(el) => (itemRefs.current[i] = el)}
+              tabIndex={index === i ? 0 : -1}
+              id={`simple-radial-item-${item.id}`}
+              title={item.label}
+              style={{
+                pointerEvents: "auto",
+                left: iconX - 20,
+                top: iconY - 20,
+              }}
+            >
+              {item.icon}
+            </button>
+            <span
+              className="rm-label"
+              style={{ left: labelX, top: labelY }}
+            >
+              {item.label}
+            </span>
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }

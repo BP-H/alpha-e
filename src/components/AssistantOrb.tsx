@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
 import RadialMenu from "./RadialMenu";
+import { HOLD_MS } from "./orbConstants";
 import { motion, useReducedMotion } from "framer-motion";
 
 /**
@@ -27,7 +28,6 @@ type SpeechRecognitionLike = {
 
 const ORB_SIZE = 76;
 const ORB_MARGIN = 12;
-const HOLD_MS = 280;
 const DRAG_THRESHOLD = 5;
 const PANEL_WIDTH = 360;
 const STORAGE_KEY = "assistantOrbPos.v6";
