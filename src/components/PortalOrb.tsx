@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 type Props = {
   onAnalyzeImage: (imgUrl: string) => void;
@@ -14,6 +14,9 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
   const holdRef = useRef<number | null>(null);
   const [mode, setMode] = useState<Mode>("idle");
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [menuIndex, setMenuIndex] = useState(0);
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     const saved = localStorage.getItem("orb-pos");
     return saved ? JSON.parse(saved) : { x: 16, y: 16 };
@@ -135,6 +138,53 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
     analyzeOverlay.current = null;
   }
 
+  function handleOrbKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const next = !menuOpen;
+      setMenuOpen(next);
+      setMode(next ? "menu" : "idle");
+      orbRef.current?.classList.toggle("grow", next);
+    } else if (e.key === "Escape") {
+      setMenuOpen(false);
+      setMode("idle");
+      orbRef.current?.classList.remove("grow");
+    }
+  }
+
+  function handleMenuKey(e: React.KeyboardEvent) {
+    const items = itemRefs.current.filter(Boolean) as HTMLButtonElement[];
+    if (!items.length) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+      e.preventDefault();
+      const next = (menuIndex + 1) % items.length;
+      setMenuIndex(next);
+      items[next]?.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+      e.preventDefault();
+      const next = (menuIndex - 1 + items.length) % items.length;
+      setMenuIndex(next);
+      items[next]?.focus();
+    } else if (e.key === "Escape") {
+      setMenuOpen(false);
+      setMode("idle");
+      orbRef.current?.focus();
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      items[menuIndex]?.click();
+    }
+  }
+
+  useEffect(() => {
+    if (menuOpen) {
+      setMenuIndex(0);
+      const first = itemRefs.current[0];
+      first?.focus();
+    } else {
+      itemRefs.current = [];
+    }
+  }, [menuOpen]);
+
   function onPointerMoveForOverlay(e: React.PointerEvent) {
     if (mode !== "analyze" || !analyzeOverlay.current) return;
     analyzeOverlay.current.style.setProperty("--x", `${e.clientX}px`);
@@ -152,15 +202,34 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
         onPointerCancel={handlePointerCancel}
         onPointerMove={onPointerMoveForOverlay}
         role="button"
+        tabIndex={0}
         aria-label="AI Portal"
         title="AI Portal"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onKeyDown={handleOrbKeyDown}
       >
         {/* inner glow */}
         <div className="orb-core" />
         {/* radial menu */}
         {menuOpen && (
-          <div className="radial-menu">
-            <button className="rm-item" onClick={startAnalyze} title="Analyze">
+          <div
+            className="radial-menu"
+            role="menu"
+            aria-label="Portal actions"
+            ref={menuRef}
+            onKeyDown={handleMenuKey}
+            aria-activedescendant={`portal-orb-item-${menuIndex}`}
+          >
+            <button
+              className="rm-item"
+              onClick={startAnalyze}
+              title="Analyze"
+              role="menuitem"
+              ref={(el) => (itemRefs.current[0] = el)}
+              tabIndex={menuIndex === 0 ? 0 : -1}
+              id="portal-orb-item-0"
+            >
               <svg viewBox="0 0 24 24" className="ico">
                 <path
                   d="M15.5 15.5L21 21"
@@ -189,6 +258,10 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
                 alert("Compose: hook this to your AI API.");
               }}
               title="Compose"
+              role="menuitem"
+              ref={(el) => (itemRefs.current[1] = el)}
+              tabIndex={menuIndex === 1 ? 0 : -1}
+              id="portal-orb-item-1"
             >
               <svg className="ico" viewBox="0 0 24 24">
                 <path
@@ -208,6 +281,10 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
                 orbRef.current?.classList.remove("grow");
               }}
               title="Close"
+              role="menuitem"
+              ref={(el) => (itemRefs.current[2] = el)}
+              tabIndex={menuIndex === 2 ? 0 : -1}
+              id="portal-orb-item-2"
             >
               <svg className="ico" viewBox="0 0 24 24">
                 <path
