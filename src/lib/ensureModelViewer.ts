@@ -12,9 +12,9 @@ export function ensureModelViewer(): Promise<void> {
     script.src =
       "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
     script.onload = () => resolve();
-    script.onerror = (err) => {
+    script.onerror = () => {
       loading = null;
-      reject(err instanceof Error ? err : new Error("Failed to load model-viewer"));
+      reject(new Error("model-viewer failed to load"));
     };
     document.head.appendChild(script);
   });
