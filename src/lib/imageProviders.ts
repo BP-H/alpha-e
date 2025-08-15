@@ -28,7 +28,10 @@ function getKey(name: string) {
   };
   const envKey = envMap[name];
   if (envKey) return envKey;
-  try { return JSON.parse(localStorage.getItem("sn.keys") || "{}")[name]; } catch { return undefined; }
+  if (typeof window !== "undefined" && window.localStorage) {
+    try { return JSON.parse(window.localStorage.getItem("sn.keys") || "{}")[name]; } catch { return undefined; }
+  }
+  return undefined;
 }
 
 /** PICSUM — no key needed */
