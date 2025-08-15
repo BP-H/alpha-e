@@ -1,0 +1,29 @@
+.orb-menu{
+  position:fixed;
+  z-index:9998;
+  width:0;height:0;
+}
+
+.orb-menu__item{
+  position:absolute;
+  width:40px;height:40px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(14,16,22,.7);
+  border:1px solid rgba(255,255,255,.15);
+  color:#fff;
+  cursor:pointer;
+  backdrop-filter:blur(8px) saturate(140%);
+  transform:rotate(calc(360deg*var(--i)/var(--count))) translate(var(--r)) rotate(calc(-360deg*var(--i)/var(--count)));
+  transition:transform .2s ease, opacity .2s ease;
+}
+
+.orb-menu__item:hover{
+  background:rgba(255,255,255,.2);
+}
+
+.orb-menu__back{
+  background:rgba(14,16,22,.5);
+}

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
+import OrbMenu, { type OrbCategory } from "./OrbMenu";
 
 /**
  * Assistant Orb — circular quick menu + 60fps drag + voice.
@@ -102,11 +103,6 @@ export default function AssistantOrb() {
   const interimRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const msgListRef = useRef<HTMLDivElement | null>(null);
-  const btnChatRef   = useRef<HTMLButtonElement | null>(null);
-  const btnReactRef  = useRef<HTMLButtonElement | null>(null);
-  const btnCommentRef= useRef<HTMLButtonElement | null>(null);
-  const btnRemixRef  = useRef<HTMLButtonElement | null>(null);
-  const btnProfileRef= useRef<HTMLButtonElement | null>(null);
 
   // feed context
   useEffect(() => {
@@ -228,19 +224,6 @@ export default function AssistantOrb() {
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  function place(el: HTMLElement | null, rad: number, deg: number) {
-    if (!el) return;
-    const { x, y } = posRef.current;
-    const cx = x + ORB_SIZE / 2;
-    const cy = y + ORB_SIZE / 2;
-    const a = (deg * Math.PI) / 180;
-    const bx = cx + rad * Math.cos(a) - el.offsetWidth / 2;
-    const by = cy + rad * Math.sin(a) - el.offsetHeight / 2;
-    el.style.position = "fixed";
-    el.style.left = `${bx}px`;
-    el.style.top = `${by}px`;
-  }
-
   function updateAnchors() {
     if (typeof window === "undefined") return;
     const { x, y } = posRef.current;
@@ -275,15 +258,6 @@ export default function AssistantOrb() {
       s.top = `${top}px`;
       if (placeRightPanel) { s.left = `${x + ORB_SIZE + 8}px`; s.right = ""; s.transform = "none"; }
       else { s.left = `${x - 8}px`; s.right = ""; s.transform = "translateX(-100%)"; }
-    }
-
-    if (menuOpen && !dragging) {
-      place(btnChatRef.current!,    84, -90); // top
-      place(btnReactRef.current!,   74, 220); // bottom-left
-      place(btnCommentRef.current!, 78, 270); // bottom
-      place(btnRemixRef.current!,   74, 320); // bottom-right
-      place(btnProfileRef.current!, 74, 180); // left
-    }
   }
 
   // pointer handlers
@@ -388,7 +362,6 @@ export default function AssistantOrb() {
       return;
     }
     setMenuOpen(v => !v);
-    requestAnimationFrame(updateAnchors);
   };
 
   // double‑click toggles mic
@@ -398,7 +371,7 @@ export default function AssistantOrb() {
 
   // lifecycle
   useEffect(() => { applyTransform(pos.x, pos.y); posRef.current = { ...pos }; updateAnchors(); }, []);
-  useEffect(() => { updateAnchors(); }, [open, toast, interim, menuOpen, dragging]);
+  useEffect(() => { updateAnchors(); }, [open, toast, interim]);
   useEffect(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, [msgs]);
 
   useEffect(() => {
@@ -427,6 +400,44 @@ export default function AssistantOrb() {
       setHover(null);
     };
   }, []);
+
+  const categories: OrbCategory[] = [
+    {
+      id: "chat",
+      icon: "💬",
+      label: "Chat",
+      onSelect: () => { setOpen(v => !v); },
+    },
+    {
+      id: "react",
+      icon: "👏",
+      label: "React",
+      actions: EMOJI_LIST.slice(0, 6).map(e => ({
+        id: e,
+        icon: e,
+        label: e,
+        onSelect: () => { if (ctxPost) bus.emit?.("post:react", { id: ctxPost.id, emoji: e }); },
+      })),
+    },
+    {
+      id: "comment",
+      icon: "✍️",
+      label: "Comment",
+      onSelect: () => setPetal("comment"),
+    },
+    {
+      id: "remix",
+      icon: "🎬",
+      label: "Remix",
+      onSelect: () => setPetal("remix"),
+    },
+    {
+      id: "profile",
+      icon: "👤",
+      label: "Profile",
+      onSelect: () => { if (ctxPost) bus.emit?.("profile:open", { id: ctxPost.author }); },
+    },
+  ];
 
   // styles
   const keyframes = `
@@ -482,20 +493,6 @@ export default function AssistantOrb() {
     backdropFilter: "blur(10px) saturate(140%)",
     animation: "panelIn .2s ease-out",
   };
-  const rbtn: React.CSSProperties = {
-    position: "fixed",
-    zIndex: 9998,
-    width: 40, height: 40,
-    borderRadius: 999,
-    display: "grid",
-    placeItems: "center",
-    background: "rgba(14,16,22,.7)",
-    border: "1px solid rgba(255,255,255,.15)",
-    color: "#fff",
-    cursor: "pointer",
-    backdropFilter: "blur(8px) saturate(140%)",
-  };
-
   return (
     <>
       <style>{keyframes}</style>
@@ -512,24 +509,18 @@ export default function AssistantOrb() {
         onLostPointerCapture={onLostPointerCapture}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        onMouseEnter={() => { setMenuOpen(true); requestAnimationFrame(updateAnchors); }}
-        onMouseLeave={() => { if (!dragging) setMenuOpen(false); }}
       >
         <div style={coreStyle} />
         <div style={ringStyle} />
       </button>
 
-      {/* Radial menu */}
       {menuOpen && !dragging && (
-        <>
-          <button ref={btnChatRef} style={rbtn} aria-label="Chat" title="Chat" onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}>💬</button>
-          <button ref={btnReactRef} style={rbtn} aria-label="React" title="React" onClick={() => setPetal("react")}>👏</button>
-          <button ref={btnCommentRef} style={rbtn} aria-label="Comment" title="Comment" onClick={() => setPetal("comment")}>✍️</button>
-          <button ref={btnRemixRef} style={rbtn} aria-label="Remix" title="Remix" onClick={() => setPetal("remix")}>🎬</button>
-          <button ref={btnProfileRef} style={{ ...rbtn, padding: 0, overflow: "hidden" }} aria-label="Profile" title="Profile" onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}>
-            <img src={ctxPost?.authorAvatar || "/avatar.jpg"} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </button>
-        </>
+        <OrbMenu
+          x={posRef.current.x + ORB_SIZE / 2}
+          y={posRef.current.y + ORB_SIZE / 2}
+          categories={categories}
+          onClose={() => setMenuOpen(false)}
+        />
       )}
 
       {/* toast + interim */}
