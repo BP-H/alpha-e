@@ -84,22 +84,48 @@ button, input, textarea, select { font: inherit; color: inherit; }
 }
 
 /* =========================
-   Post media safety net (fade in on ready)
+   Post media safety net (fade in on ready) — FIXED
    ========================= */
 .pc-media { position: relative; width: 100%; aspect-ratio: 4/5; background: #0d1320; }
-.pc-media img, .pc-media video{
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
+.pc-media img,
+.pc-media video,
+.pc-media iframe,
+.pc-media embed,
+.pc-media model-viewer{
+  position: static;                 /* no stacking */
+  display: block;
+  width: 100%;
+  height: auto;
   object-fit: cover;
-  opacity: 0;
+  opacity: 0;                       /* component flips to 1 on load */
   transition: opacity .25s ease;
-  pointer-events: none;
+  pointer-events: auto;             /* video controls clickable */
+}
+
+/* (optional) cover mode you can add to the container */
+.pc-media.pc-media--cover img,
+.pc-media.pc-media--cover video{
+  position: absolute; inset: 0; width: 100%; height: 100%;
 }
 
 /* Allow full media display inside the feed without enforced cropping */
 .feed-wrap .pc-media { aspect-ratio: auto; }
 .feed-wrap .pc-media img,
-.feed-wrap .pc-media video { object-fit: contain; }
+.feed-wrap .pc-media video,
+.feed-wrap .pc-media iframe,
+.feed-wrap .pc-media embed,
+.feed-wrap .pc-media model-viewer { object-fit: contain; }
+
+/* Carousel controls used by PostCard */
+.pc-nav{
+  position:absolute; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.45); color:#fff; border:0; border-radius:999px; cursor:pointer; z-index:3;
+}
+.pc-nav.prev{ left:10px; } .pc-nav.next{ right:10px; }
+.pc-dots{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:3; }
+.pc-dots button{ width:8px; height:8px; border-radius:50%; border:0; padding:0; background:rgba(255,255,255,.5); cursor:pointer; }
+.pc-dots button.on{ background:#fff; }
 
 /* =========================
    Assistant Orb (bottom-right floating)
