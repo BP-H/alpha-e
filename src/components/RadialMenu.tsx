@@ -39,6 +39,10 @@ type FullProps = {
 /** Union of both modes */
 type RadialMenuProps = SimpleProps | FullProps;
 
+function isSimpleProps(p: RadialMenuProps): p is SimpleProps {
+  return Array.isArray((p as any).items);
+}
+
 export default function RadialMenu(props: RadialMenuProps) {
   // If `items` is present, render the lightweight menu (Simple mode)
   if ("items" in props) {
