@@ -4,12 +4,16 @@ import bus from "../lib/bus";
 export default function Topbar() {
   const ref = useRef<HTMLElement | null>(null);
   const [theme, setTheme] = useState(() =>
-    localStorage.getItem("theme") || "dark"
+    typeof window !== "undefined"
+      ? localStorage.getItem("theme") || "dark"
+      : "dark"
   );
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    if (typeof window !== "undefined") {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+    }
   }, [theme]);
 
   useLayoutEffect(() => {
