@@ -8,6 +8,7 @@ import Topbar from "./Topbar";
 import Sidebar from "./Sidebar";
 import PortalOverlay from "./PortalOverlay";
 import PostComposer from "./PostComposer";
+import AvatarPortal from "./AvatarPortal";
 
 export default function Shell() {
   return (
@@ -37,6 +38,7 @@ export default function Shell() {
 
       <ChatDock />
       <AssistantOrb />
+      <AvatarPortal />
     </>
   );
 }

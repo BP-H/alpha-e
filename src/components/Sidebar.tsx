@@ -54,6 +54,16 @@ export default function Sidebar() {
   );
   const [avatar, setAvatar] = useLocal("sn.profile.avatar", "/avatar.jpg");
 
+  // Trigger the AvatarPortal splash whenever the avatar changes
+  const avatarChanged = useRef(false);
+  useEffect(() => {
+    if (avatarChanged.current) {
+      bus.emit("avatar-portal:open");
+    } else {
+      avatarChanged.current = true;
+    }
+  }, [avatar]);
+
   const [theme, setTheme] = useTheme();
   const [accent, setAccent] = useLocal("sn.accent", "#7c83ff");
   const [worldMode, setWorldMode] = useLocal<"orbs" | "matrix">(
