@@ -51,14 +51,6 @@ export type RemixSpec = {
   params?: Record<string, unknown>;
 };
 
-export type WorldState = {
-  theme: "dark" | "light";
-  orbCount: number;
-  gridOpacity: number;
-  fogLevel: number;
-  orbColor: string;
-};
-
 declare global {
   namespace JSX {
     interface IntrinsicElements {
