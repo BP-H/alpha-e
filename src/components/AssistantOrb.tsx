@@ -4,18 +4,15 @@ import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
 
 /**
- * Assistant Orb — final, fast, and robust.
- * - 60fps drag via translate3d (no re-renders while moving)
- * - Pointer capture + pointerEvents:none during drag for correct hit-testing
- * - Hold 280ms to start voice (push-to-talk); mic lifecycle via SpeechRecognition events
- * - Drag & release over a post ⇒ link that post (toast)
- * - Side-aware toasts/interim/panel that follow the orb via refs (no render churn)
- * - ESC closes panel & stops mic; handles lostpointercapture
- * - Tap vs drag suppression; position persisted to localStorage
- * - Emoji drawer (🌀 / 🎬 + reactions) + /comment, /react, /world, /remix
+ * Assistant Orb — 60fps drag + circular quick menu.
+ * - Chat on top (opens panel)
+ * - Quick selectors bottom arc: Remix / React / Comment
+ * - Left: Profile chip (hovered/selected post author)
+ * - Petal drawers for quick actions
+ * - Blob-safe, SSR-safe; fixes previous TS comma error
  */
 
-/* Minimal SpeechRecognition type (avoid DOM lib dependency in types) */
+/* Minimal SpeechRecognition type */
 type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
@@ -33,12 +30,11 @@ const ORB_MARGIN = 12;
 const HOLD_MS = 280;
 const DRAG_THRESHOLD = 5;
 const PANEL_WIDTH = 360;
-const STORAGE_KEY = "assistantOrbPos.v4";
+const STORAGE_KEY = "assistantOrbPos.v5";
 
 const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
 const uuid = () => {
   try {
-    // runtime-safe even if crypto is not polyfilled during SSR
     return (globalThis as any)?.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
   } catch {
     return Math.random().toString(36).slice(2);
@@ -49,7 +45,7 @@ const EMOJI_LIST: string[] = [
   "🤗","😂","🤣","😅","🙂","😉","😍","😎","🥳","🤯","😡","😱","🤔","🤭","🙄","🥺","🤪","🤫","🤤","😴",
   "👻","🤖","👽","😈","👋","👍","👎","👏","🙏","👀","💪","🫶","💅","🔥","✨","⚡","💥","❤️","🫠","🫡",
   "💙","💜","🖤","🤍","❤️‍🔥","❤️‍🩹","💯","💬","🗯️","🎉","🎊","🎁","🏆","🎮","🚀","✈️","🚗","🏠","🫨","🗿",
-  "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩",
+  "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩"
 ];
 
 /** LLM stub; swap for a real call when wired */
@@ -57,14 +53,13 @@ async function askLLMStub(text: string) {
   return `🤖 I’m a stub, but I heard: “${text}”`;
 }
 
-/** Helper that works on Element (no HTMLElement narrowing needed) */
+/** Works on Element */
 function getClosestPostId(el: Element | null): string | null {
-  // closest() returns Element | null; getAttribute exists on Element
   return el?.closest?.("[data-post-id]")?.getAttribute?.("data-post-id") ?? null;
 }
 
 export default function AssistantOrb() {
-  // --- committed position (for initial paint & persistence)
+  // committed position
   const [pos, setPos] = useState(() => {
     if (typeof window === "undefined") return { x: 0, y: 0 };
     try {
@@ -82,47 +77,55 @@ export default function AssistantOrb() {
       y: window.innerHeight - ORB_SIZE - ORB_MARGIN,
     };
   });
-
-  // live position (mutated without re-render while dragging)
   const posRef = useRef<{ x: number; y: number }>({ ...pos });
 
-  // --- UI / interaction state
-  const [open, setOpen] = useState(false);
+  // UI
+  const [open, setOpen] = useState(false);       // chat/panel
   const [mic, setMic] = useState(false);
   const [toast, setToast] = useState("");
   const [interim, setInterim] = useState("");
   const [msgs, setMsgs] = useState<AssistantMessage[]>([]);
   const [ctxPost, setCtxPost] = useState<Post | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); // radial
 
-  // --- gesture refs
+  // drawers: "react" | "comment" | "remix" | "share" | null
+  const [petal, setPetal] = useState<null | "react" | "comment" | "remix" | "share">(null);
+
+  // gesture refs
   const movedRef = useRef(false);
   const pressRef = useRef<{ id: number; dx: number; dy: number; sx: number; sy: number } | null>(null);
   const holdTimerRef = useRef<number | null>(null);
   const moveRafRef = useRef<number | null>(null);
   const lastPtrRef = useRef<{ x: number; y: number } | null>(null);
-  const suppressClickRef = useRef(false);  // after hold
-  const preventTapRef   = useRef(false);   // after drag
+  const suppressClickRef = useRef(false);
+  const preventTapRef   = useRef(false);
   const hoverIdRef = useRef<string | null>(null);
 
-  // --- DOM refs
+  // DOM refs
   const orbRef = useRef<HTMLButtonElement | null>(null);
   const toastRef = useRef<HTMLDivElement | null>(null);
   const interimRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const msgListRef = useRef<HTMLDivElement | null>(null);
 
-  // --- feed context
+  // radial button refs (chat top, react bl, comment bottom, remix br, profile left)
+  const btnChatRef   = useRef<HTMLButtonElement | null>(null);
+  const btnReactRef  = useRef<HTMLButtonElement | null>(null);
+  const btnCommentRef= useRef<HTMLButtonElement | null>(null);
+  const btnRemixRef  = useRef<HTMLButtonElement | null>(null);
+  const btnProfileRef= useRef<HTMLButtonElement | null>(null);
+
+  // feed context
   useEffect(() => {
     const a = bus.on?.("feed:hover", (p: { post: Post }) => setCtxPost(p.post));
     const b = bus.on?.("feed:select", (p: { post: Post }) => setCtxPost(p.post));
     return () => { try { a?.(); } catch {} try { b?.(); } catch {} };
   }, []);
 
-  // --- Speech recognition
+  // speech
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const restartRef = useRef(false);
-
   function ensureRec(): SpeechRecognitionLike | null {
     if (recRef.current) return recRef.current;
     const C =
@@ -160,9 +163,8 @@ export default function AssistantOrb() {
     setInterim("");
   }
 
-  // --- Commands
+  // commands
   const push = (m: AssistantMessage) => setMsgs(s => [...s, m]);
-
   async function handleCommand(text: string) {
     const post = ctxPost || null;
     push({ id: uuid(), role: "user", text, ts: Date.now(), postId: (post?.id as any) });
@@ -180,7 +182,6 @@ export default function AssistantOrb() {
       }
       return;
     }
-
     if (lower.startsWith("/comment ")) {
       const body = T.slice(9).trim();
       if (post) {
@@ -191,13 +192,11 @@ export default function AssistantOrb() {
       }
       return;
     }
-
     if (lower.startsWith("/world")) {
       bus.emit?.("orb:portal", { x: posRef.current.x, y: posRef.current.y });
       push({ id: uuid(), role: "assistant", text: "🌀 Entering world…", ts: Date.now(), postId: (post?.id as any) });
       return;
     }
-
     if (lower.startsWith("/remix")) {
       if (post) {
         bus.emit?.("post:remix", { id: post.id });
@@ -214,12 +213,13 @@ export default function AssistantOrb() {
   }
 
   function handleEmojiClick(emoji: string) {
-    if (emoji === "🌀") { handleCommand("/world"); return; }
-    if (emoji === "🎬") { handleCommand("/remix"); return; }
-    handleCommand(`/react ${emoji}`);
+    if (!ctxPost) { setToast("Hover a post first"); return; }
+    bus.emit?.("post:react", { id: ctxPost.id, emoji });
+    setToast(`Reacted ${emoji}`);
+    setTimeout(() => setToast(""), 900);
   }
 
-  // --- hover highlight helper
+  // hover highlight
   function setHover(id: string | null) {
     if (hoverIdRef.current) {
       document.querySelector(`[data-post-id="${hoverIdRef.current}"]`)?.classList.remove("pc-target");
@@ -231,13 +231,26 @@ export default function AssistantOrb() {
     }
   }
 
-  // --- high-performance movement & anchoring
+  // move & anchors
   function applyTransform(x: number, y: number) {
     const el = orbRef.current; if (!el) return;
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  /** Position toasts / interim / panel without re-rendering */
+  function place(el: HTMLElement | null, rad: number, deg: number) {
+    if (!el) return;
+    const { x, y } = posRef.current;
+    const cx = x + ORB_SIZE / 2;
+    const cy = y + ORB_SIZE / 2;
+    const a = (deg * Math.PI) / 180;
+    const bx = cx + rad * Math.cos(a) - el.offsetWidth / 2;
+    const by = cy + rad * Math.sin(a) - el.offsetHeight / 2;
+    el.style.position = "fixed";
+    el.style.left = `${bx}px`;
+    el.style.top = `${by}px`;
+  }
+
+  /** Position toasts / interim / panel + radial buttons */
   function updateAnchors() {
     if (typeof window === "undefined") return;
     const { x, y } = posRef.current;
@@ -246,7 +259,7 @@ export default function AssistantOrb() {
     const measuredPanelW = panelEl?.offsetWidth || PANEL_WIDTH;
     const spaceRight = window.innerWidth - (x + ORB_SIZE + 8);
     const placeRightPanel = spaceRight >= (measuredPanelW + 16);
-    const placeRightToast = spaceRight >= 200; // smaller threshold for toast/interim
+    const placeRightToast = spaceRight >= 200;
 
     // toast
     if (toastRef.current) {
@@ -257,7 +270,7 @@ export default function AssistantOrb() {
       s.transform = placeRightToast ? "translateY(-50%)" : "translate(-100%, -50%)";
     }
 
-    // interim transcript
+    // interim
     if (interimRef.current) {
       const s = interimRef.current.style;
       s.position = "fixed";
@@ -283,9 +296,18 @@ export default function AssistantOrb() {
         s.transform = "translateX(-100%)";
       }
     }
+
+    // radial buttons
+    if (menuOpen && !dragging) {
+      place(btnChatRef.current!,    84, -90); // top
+      place(btnReactRef.current!,   74, 220); // bottom-left
+      place(btnCommentRef.current!, 78, 270); // bottom
+      place(btnRemixRef.current!,   74, 320); // bottom-right
+      place(btnProfileRef.current!, 74, 180); // left
+    }
   }
 
-  // --- pointer handlers
+  // pointer handlers
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     const el = orbRef.current; if (!el) return;
     try { el.setPointerCapture(e.pointerId); } catch {}
@@ -295,8 +317,8 @@ export default function AssistantOrb() {
     movedRef.current = false;
     preventTapRef.current = false;
     setDragging(true);
+    setMenuOpen(false);
 
-    // allow elementFromPoint to hit posts while we keep receiving events via capture
     el.style.pointerEvents = "none";
 
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
@@ -319,7 +341,6 @@ export default function AssistantOrb() {
       const nx = clamp(cur.x - dx, ORB_MARGIN, Math.max(ORB_MARGIN, window.innerWidth - ORB_SIZE - ORB_MARGIN));
       const ny = clamp(cur.y - dy, ORB_MARGIN, Math.max(ORB_MARGIN, window.innerHeight - ORB_SIZE - ORB_MARGIN));
 
-      // drag threshold
       if (!movedRef.current && Math.hypot(cur.x - sx, cur.y - sy) > DRAG_THRESHOLD) {
         movedRef.current = true;
         preventTapRef.current = true;
@@ -330,7 +351,6 @@ export default function AssistantOrb() {
       applyTransform(nx, ny);
       updateAnchors();
 
-      // highlight post under pointer
       const under = document.elementFromPoint(cur.x, cur.y);
       const id = getClosestPostId(under);
       if (id !== hoverIdRef.current) {
@@ -341,16 +361,13 @@ export default function AssistantOrb() {
   };
 
   function finishGesture(clientX: number, clientY: number) {
-    // clear timers/raf
     if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
     if (moveRafRef.current != null) { cancelAnimationFrame(moveRafRef.current); moveRafRef.current = null; }
 
-    // commit final position (for panel anchoring & persistence)
     setPos({ ...posRef.current });
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(posRef.current)); } catch {}
     updateAnchors();
 
-    // if voice was started via hold => stop & link the post only on drag
     if (mic && suppressClickRef.current) {
       stopListening();
       if (movedRef.current) {
@@ -379,26 +396,25 @@ export default function AssistantOrb() {
   };
 
   const onLostPointerCapture = () => {
-    // Graceful finish if the browser cancels capture
     const last = lastPtrRef.current;
     const fallback = { x: posRef.current.x + ORB_SIZE / 2, y: posRef.current.y + ORB_SIZE / 2 };
     finishGesture(last?.x ?? fallback.x, last?.y ?? fallback.y);
   };
 
-  // suppress synthetic click after hold/drag
   const onClick = () => {
     if (suppressClickRef.current || preventTapRef.current) {
       suppressClickRef.current = false;
       preventTapRef.current = false;
       return;
     }
-    setOpen(v => !v);
+    // tap toggles the radial menu
+    setMenuOpen(v => !v);
     requestAnimationFrame(updateAnchors);
   };
 
-  // --- lifecycle & global handlers
-  useEffect(() => { applyTransform(pos.x, pos.y); posRef.current = { ...pos }; updateAnchors(); }, []); // initial paint
-  useEffect(() => { updateAnchors(); }, [open, toast, interim]);
+  // lifecycle
+  useEffect(() => { applyTransform(pos.x, pos.y); posRef.current = { ...pos }; updateAnchors(); }, []); // initial
+  useEffect(() => { updateAnchors(); }, [open, toast, interim, menuOpen, dragging]);
   useEffect(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, [msgs]);
 
   useEffect(() => {
@@ -411,7 +427,7 @@ export default function AssistantOrb() {
       applyTransform(nx, ny);
       updateAnchors();
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); stopListening(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setMenuOpen(false); setPetal(null); stopListening(); } };
 
     window.addEventListener("resize", onResize);
     window.addEventListener("keydown", onKey);
@@ -422,7 +438,6 @@ export default function AssistantOrb() {
     };
   }, []);
 
-  // unmount cleanup
   useEffect(() => {
     return () => {
       try { recRef.current?.stop?.(); } catch {}
@@ -433,11 +448,10 @@ export default function AssistantOrb() {
     };
   }, []);
 
-  // --- styles
+  // styles
   const keyframes = `
     @keyframes panelIn { from { opacity: 0; transform: scale(.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   `;
-
   const orbStyle: React.CSSProperties = {
     position: "fixed",
     left: 0, top: 0,
@@ -454,9 +468,8 @@ export default function AssistantOrb() {
     willChange: "transform",
     transition: dragging ? "none" : "box-shadow .2s ease, filter .2s ease",
     cursor: dragging ? "grabbing" : "grab",
-    transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`, // initial; live updates via applyTransform()
+    transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
   };
-
   const coreStyle: React.CSSProperties = {
     width: 56, height: 56, borderRadius: 999,
     background: "radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.95), rgba(255,255,255,.28) 65%, transparent 70%)",
@@ -467,7 +480,6 @@ export default function AssistantOrb() {
     boxShadow: mic ? "0 0 0 10px rgba(255,116,222,.16)" : "inset 0 0 24px rgba(255,255,255,.55)",
     transition: "box-shadow .25s ease",
   };
-
   const toastBoxStyle: React.CSSProperties = {
     position: "fixed",
     background: "rgba(0,0,0,.7)",
@@ -478,7 +490,6 @@ export default function AssistantOrb() {
     zIndex: 9998,
     pointerEvents: "none",
   };
-
   const panelStyle: React.CSSProperties = {
     position: "fixed",
     width: PANEL_WIDTH, maxWidth: "90vw",
@@ -492,7 +503,22 @@ export default function AssistantOrb() {
     animation: "panelIn .2s ease-out",
   };
 
-  // --- render
+  // radial button factory
+  const rbtn: React.CSSProperties = {
+    position: "fixed",
+    zIndex: 9998,
+    width: 40, height: 40,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: "rgba(14,16,22,.7)",
+    border: "1px solid rgba(255,255,255,.15)",
+    color: "#fff",
+    cursor: "pointer",
+    backdropFilter: "blur(8px) saturate(140%)",
+  };
+
+  // render
   return (
     <>
       <style>{keyframes}</style>
@@ -500,7 +526,7 @@ export default function AssistantOrb() {
       <button
         ref={orbRef}
         aria-label="Assistant orb"
-        title="Hold to talk, drag to link a post"
+        title="Tap for quick menu • Hold to talk • Drag to link a post"
         style={orbStyle}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -508,18 +534,76 @@ export default function AssistantOrb() {
         onPointerCancel={onPointerEnd}
         onLostPointerCapture={onLostPointerCapture}
         onClick={onClick}
+        onMouseEnter={() => { setMenuOpen(true); requestAnimationFrame(updateAnchors); }}
+        onMouseLeave={() => { if (!dragging) setMenuOpen(false); }}
       >
         <div style={coreStyle} />
         <div style={ringStyle} />
       </button>
 
-      {/* toast + interim follow the orb via updateAnchors() */}
-      {toast && <div ref={toastRef} style={toastBoxStyle} aria-live="polite">{toast}</div>}
-      {interim && <div ref={interimRef} style={toastBoxStyle} aria-live="polite">…{interim}</div>}
+      {/* Radial menu */}
+      {menuOpen && !dragging && (
+        <>
+          {/* Chat (top) */}
+          <button
+            ref={btnChatRef}
+            style={rbtn}
+            aria-label="Chat"
+            title="Chat"
+            onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}
+          >💬</button>
 
-      {/* compact side panel */}
+          {/* React (bottom-left) */}
+          <button
+            ref={btnReactRef}
+            style={rbtn}
+            aria-label="React"
+            title="React"
+            onClick={() => setPetal("react")}
+          >👏</button>
+
+          {/* Comment (bottom) */}
+          <button
+            ref={btnCommentRef}
+            style={rbtn}
+            aria-label="Comment"
+            title="Comment"
+            onClick={() => setPetal("comment")}
+          >✍️</button>
+
+          {/* Remix (bottom-right) */}
+          <button
+            ref={btnRemixRef}
+            style={rbtn}
+            aria-label="Remix"
+            title="Remix"
+            onClick={() => setPetal("remix")}
+          >🎬</button>
+
+          {/* Profile (left) */}
+          <button
+            ref={btnProfileRef}
+            style={{ ...rbtn, padding: 0, overflow: "hidden" }}
+            aria-label="Profile"
+            title="Profile"
+            onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}
+          >
+            <img
+              src={ctxPost?.authorAvatar || "/avatar.jpg"}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </button>
+        </>
+      )}
+
+      {/* toast + interim follow via updateAnchors() */}
+      {toast && <div ref={toastRef} className="assistant-orb__toast" aria-live="polite">{toast}</div>}
+      {interim && <div ref={interimRef} className="assistant-orb__toast interim" aria-live="polite">…{interim}</div>}
+
+      {/* Chat panel */}
       {open && (
-        <div ref={panelRef} style={panelStyle}>
+        <div ref={panelRef} className="assistant-panel">
           <div style={{ fontWeight: 800, paddingBottom: 4, display: "flex", alignItems: "center" }}>
             Assistant
             <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.6, paddingLeft: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -529,81 +613,11 @@ export default function AssistantOrb() {
               onClick={() => setOpen(false)}
               style={{ marginLeft: "auto", height: 28, padding: "0 10px", borderRadius: 8, cursor: "pointer", background: "rgba(255,255,255,.08)", color: "#fff", border: "1px solid rgba(255,255,255,.16)" }}
               aria-label="Close"
-            >
-              ✕
-            </button>
+            >✕</button>
           </div>
 
           {/* messages */}
           <div ref={msgListRef} style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto", padding: "6px 0" }}>
-            {msgs.length === 0 && <div style={{ fontSize: 13, opacity: .75 }}>Hold the orb to speak, type a command, or tap an emoji to react.</div>}
+            {msgs.length === 0 && <div style={{ fontSize: 13, opacity: .75 }}>Hold to speak, type a command, or use the quick menu.</div>}
             {msgs.map(m => (
-              <div key={m.id} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ maxWidth: "80%", background: m.role === "user" ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.06)", padding: "8px 10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.12)" }}>
-                  {m.text}
-                </div>
-              </div>
-            ))}
-            {interim && (
-              <div style={{ display: "flex" }}>
-                <div style={{ maxWidth: "80%", background: "rgba(255,255,255,.06)", padding: "8px 10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.12)" }}>
-                  …{interim}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* emoji drawer */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 6, padding: 8, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 10 }}>
-            {EMOJI_LIST.map(e => (
-              <button
-                key={e}
-                onClick={() => handleEmojiClick(e)}
-                style={{ fontSize: 20, lineHeight: "28px", background: "transparent", color: "inherit", border: "none", cursor: "pointer", borderRadius: 8, padding: "4px 2px" }}
-                aria-label={`React ${e}`}
-                title={`React ${e}`}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-
-          {/* input row */}
-          <form
-            onSubmit={async e => {
-              e.preventDefault();
-              const input = (e.currentTarget.elements.namedItem("cmd") as HTMLInputElement);
-              const t = input.value.trim();
-              if (!t) return;
-              input.value = "";
-              await handleCommand(t);
-            }}
-            style={{ display: "flex", gap: 8, marginTop: 8 }}
-          >
-            <input
-              name="cmd"
-              placeholder="Type /comment hello, /react ❤️, /world, /remix"
-              style={{ flex: 1, height: 36, padding: "0 10px", borderRadius: 10, outline: "none", background: "rgba(16,18,28,.65)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}
-            />
-            <button
-              type="button"
-              onClick={() => (mic ? stopListening() : startListening())}
-              style={{ height: 36, padding: "0 10px", borderRadius: 10, cursor: "pointer", background: mic ? "rgba(255,116,222,.25)" : "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}
-              aria-label={mic ? "Stop" : "Speak"}
-              title={mic ? "Stop" : "Speak"}
-            >
-              {mic ? "🎙️" : "🎤"}
-            </button>
-            <button
-              type="submit"
-              style={{ height: 36, padding: "0 12px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}
-              aria-label="Send"
-            >
-              ➤
-            </button>
-          </form>
-        </div>
-      )}
-    </>
-  );
-}
+              <div k
