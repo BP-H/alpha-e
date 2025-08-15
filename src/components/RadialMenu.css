@@ -5,16 +5,19 @@
   border-radius: 9999px;
   display: grid;
   place-items: center;
-  background: rgba(14, 16, 22, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--rm-bg);
+  border: 1px solid var(--rm-border);
+  color: var(--rm-ink);
   cursor: pointer;
-  backdrop-filter: blur(8px) saturate(140%);
+  backdrop-filter: blur(var(--rm-blur)) saturate(140%);
   transform-origin: center;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--rm-shadow);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.rbtn:hover {
-  background: rgba(14, 16, 22, 0.85);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+.rbtn:hover,
+.rbtn:focus-visible {
+  background: var(--rm-bg-hover);
+  box-shadow: var(--rm-shadow-hover);
 }
