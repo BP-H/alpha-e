@@ -1,108 +1,34 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
+export interface RadialMenuItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  action?: () => void;
+  items?: RadialMenuItem[];
+  closeOnSelect?: boolean;
+}
+
 interface RadialMenuProps {
   center: { x: number; y: number };
   onClose: () => void;
-  onChat: () => void;
-  onReact: (emoji: string) => void;
-  onComment: () => void;
-  onRemix: () => void;
-  onShare: () => void;
-  onProfile: () => void;
-  avatarUrl: string;
-  emojis: string[];
+  items: RadialMenuItem[];
 }
 
-export default function RadialMenu({
-  center,
-  onClose,
-  onChat,
-  onReact,
-  onComment,
-  onRemix,
-  onShare,
-  onProfile,
-  avatarUrl,
-  emojis,
-}: RadialMenuProps) {
+export default function RadialMenu({ center, onClose, items }: RadialMenuProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [step, setStep] = useState<"root" | "react" | "react-all" | "create">("root");
+  const [stack, setStack] = useState<RadialMenuItem[][]>([items]);
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     menuRef.current?.focus();
-    setStep("root");
+    setStack([items]);
     setIndex(0);
-  }, []);
+  }, [items]);
 
-  const PAGE_SIZE = 8;
-
-  const menuConfig = {
-    root: [
-      { id: "chat", label: "Chat", icon: "💬", action: () => { onChat(); onClose(); } },
-      { id: "react", label: "React", icon: "👏", next: "react" as const },
-      { id: "create", label: "Create", icon: "✍️", next: "create" as const },
-      {
-        id: "profile",
-        label: "Profile",
-        icon: (
-          <img
-            src={avatarUrl}
-            alt=""
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        ),
-        action: () => {
-          onProfile();
-          onClose();
-        },
-      },
-    ],
-    react: emojis.slice(0, PAGE_SIZE).map((e, i) => ({
-      id: `emoji-${i}`,
-      label: `React ${e}`,
-      icon: e,
-      action: () => {
-        onReact(e);
-        onClose();
-      },
-    })),
-    reactAll: emojis.map((e, i) => ({
-      id: `emoji-all-${i}`,
-      label: `React ${e}`,
-      icon: e,
-      action: () => {
-        onReact(e);
-        onClose();
-      },
-    })),
-    create: [
-      { id: "comment", label: "Comment", icon: "✍️", action: () => { onComment(); onClose(); } },
-      { id: "remix", label: "Remix", icon: "🎬", action: () => { onRemix(); onClose(); } },
-      { id: "share", label: "Share", icon: "↗️", action: () => { onShare(); onClose(); } },
-    ],
-    moreReact: { id: "more", label: "More reactions", icon: "…", next: "react-all" as const },
-  } as const;
-
-  const rootItems = menuConfig.root;
-  const baseReactItems = menuConfig.react;
-  const reactItems =
-    emojis.length > PAGE_SIZE
-      ? [...baseReactItems, menuConfig.moreReact]
-      : baseReactItems;
-  const reactAllItems = menuConfig.reactAll;
-  const createItems = menuConfig.create;
-
-  const currentItems =
-    step === "root"
-      ? rootItems
-      : step === "react"
-      ? reactItems
-      : step === "react-all"
-      ? reactAllItems
-      : createItems;
+  const currentItems = stack[stack.length - 1];
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -114,16 +40,17 @@ export default function RadialMenu({
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       const item = currentItems[index];
-      if ((item as any).next) {
-        setStep((item as any).next);
+      if (item.items) {
+        setStack([...stack, item.items]);
         setIndex(0);
       } else {
-        (item as any).action();
+        item.action?.();
+        if (item.closeOnSelect !== false) onClose();
       }
     } else if (e.key === "Escape") {
       e.preventDefault();
-      if (step !== "root") {
-        setStep("root");
+      if (stack.length > 1) {
+        setStack(stack.slice(0, -1));
         setIndex(0);
       } else {
         onClose();
@@ -148,7 +75,7 @@ export default function RadialMenu({
   const angleFor = (i: number, len: number) => (360 / len) * i - 90;
 
   function renderItem(
-    item: any,
+    item: RadialMenuItem,
     i: number,
     active: boolean,
     radius: number,
@@ -164,11 +91,7 @@ export default function RadialMenu({
         role="menuitem"
         tabIndex={-1}
         aria-label={item.label}
-        style={{
-          ...rbtn,
-          left: -20,
-          top: -20,
-        }}
+        style={{ ...rbtn, left: -20, top: -20 }}
         initial={
           reduceMotion
             ? { scale: 1, opacity: 1, x, y }
@@ -188,11 +111,12 @@ export default function RadialMenu({
         }
         transition={{ duration: reduceMotion ? 0 : 0.2 }}
         onClick={() => {
-          if (item.next) {
-            setStep(item.next);
+          if (item.items) {
+            setStack([...stack, item.items]);
             setIndex(0);
           } else {
-            item.action();
+            item.action?.();
+            if (item.closeOnSelect !== false) onClose();
           }
         }}
       >
@@ -202,6 +126,7 @@ export default function RadialMenu({
   }
 
   const activeId = currentItems[index]?.id || "";
+  const radius = stack.length === 1 ? 74 : 120;
 
   return (
     <div
@@ -210,60 +135,48 @@ export default function RadialMenu({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       aria-activedescendant={`assistant-menu-item-${activeId}`}
-      style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
+      style={{
+        position: "fixed",
+        left: center.x,
+        top: center.y,
+        width: 0,
+        height: 0,
+        zIndex: 9998,
+      }}
     >
-      {step === "root" && (
-        <AnimatePresence>
-          {rootItems.map((item, i) =>
-            renderItem(item, i, i === index, 74, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
+        {currentItems.map((item, i) =>
+          renderItem(item, i, i === index, radius, currentItems.length)
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
         <motion.button
-          key={step === "root" ? "close" : "back"}
-          id={step === "root" ? "assistant-menu-item-close" : "assistant-menu-item-back"}
+          key={stack.length === 1 ? "close" : "back"}
+          id={
+            stack.length === 1
+              ? "assistant-menu-item-close"
+              : "assistant-menu-item-back"
+          }
           role="menuitem"
           tabIndex={-1}
-          aria-label={step === "root" ? "Close" : "Back"}
+          aria-label={stack.length === 1 ? "Close" : "Back"}
           style={{ ...rbtn, left: -20, top: -20 }}
           initial={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={reduceMotion ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.2 }}
           onClick={() => {
-            if (step === "root") {
+            if (stack.length === 1) {
               onClose();
             } else {
-              setStep("root");
+              setStack(stack.slice(0, -1));
               setIndex(0);
             }
           }}
         >
-          {step === "root" ? "✖️" : "⬅️"}
+          {stack.length === 1 ? "✖️" : "⬅️"}
         </motion.button>
       </AnimatePresence>
-      {step === "react" && (
-        <AnimatePresence>
-          {reactItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      {step === "react-all" && (
-        <AnimatePresence>
-          {reactAllItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
-      {step === "create" && (
-        <AnimatePresence>
-          {createItems.map((item, i) =>
-            renderItem(item, i, i === index, 120, currentItems.length)
-          )}
-        </AnimatePresence>
-      )}
     </div>
   );
 }

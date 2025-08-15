@@ -5,16 +5,18 @@ import PortalOrb from "./PortalOrb";
 import bus from "../lib/bus";
 
 describe("PortalOrb compose action", () => {
-  it("emits compose event when selecting compose", async () => {
+  it("emits compose:comment when selecting comment", async () => {
     const emitSpy = vi.spyOn(bus, "emit");
-    const { getByRole, findByTitle } = render(
+    const { getByRole, findByLabelText } = render(
       <PortalOrb onAnalyzeImage={() => {}} />
     );
     const orb = getByRole("button", { name: /ai portal/i });
     fireEvent.keyDown(orb, { key: "Enter" });
-    const composeBtn = await findByTitle("Compose");
+    const composeBtn = await findByLabelText("Compose");
     fireEvent.click(composeBtn);
-    expect(emitSpy).toHaveBeenCalledWith("compose");
+    const commentBtn = await findByLabelText("Comment");
+    fireEvent.click(commentBtn);
+    expect(emitSpy).toHaveBeenCalledWith("compose:comment");
     emitSpy.mockRestore();
   });
 });

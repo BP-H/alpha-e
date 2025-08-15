@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
-import RadialMenu from "./RadialMenu";
+import RadialMenu, { RadialMenuItem } from "./RadialMenu";
 import { motion, useReducedMotion } from "framer-motion";
 
 /**
@@ -584,41 +584,79 @@ export default function AssistantOrb() {
               orbRef.current?.focus();
             }}
           />
-          <RadialMenu
-            center={{ x: pos.x + ORB_SIZE / 2, y: pos.y + ORB_SIZE / 2 }}
-            onClose={() => {
-              setMenuOpen(false);
-              orbRef.current?.focus();
-            }}
-            onChat={() => {
-              setOpen(v => !v);
-              setPetal(null);
-              setMenuOpen(false);
-              requestAnimationFrame(updateAnchors);
-            }}
-            onReact={(e) => {
-              handleEmojiClick(e);
-              setMenuOpen(false);
-            }}
-            onComment={() => {
-              setPetal("comment");
-              setMenuOpen(false);
-            }}
-            onRemix={() => {
-              setPetal("remix");
-              setMenuOpen(false);
-            }}
-            onShare={() => {
-              setPetal("share");
-              setMenuOpen(false);
-            }}
-            onProfile={() => {
-              if (ctxPost) bus.emit?.("profile:open", { id: ctxPost.author });
-              setMenuOpen(false);
-            }}
-            avatarUrl={ctxPost?.authorAvatar || "/avatar.jpg"}
-            emojis={EMOJI_LIST.slice(0, 8)}
-          />
+          {(() => {
+            const emojis = EMOJI_LIST.slice(0, 8);
+            const reactItems: RadialMenuItem[] = emojis.map((e, i) => ({
+              id: `emoji-${i}`,
+              label: `React ${e}`,
+              icon: e,
+              action: () => {
+                handleEmojiClick(e);
+              },
+            }));
+            const items: RadialMenuItem[] = [
+              {
+                id: "chat",
+                label: "Chat",
+                icon: "💬",
+                action: () => {
+                  setOpen((v) => !v);
+                  setPetal(null);
+                  requestAnimationFrame(updateAnchors);
+                },
+              },
+              { id: "react", label: "React", icon: "👏", items: reactItems },
+              {
+                id: "compose",
+                label: "Compose",
+                icon: "✍️",
+                items: [
+                  {
+                    id: "comment",
+                    label: "Comment",
+                    icon: "✍️",
+                    action: () => setPetal("comment"),
+                  },
+                  {
+                    id: "remix",
+                    label: "Remix",
+                    icon: "🎬",
+                    action: () => setPetal("remix"),
+                  },
+                  {
+                    id: "share",
+                    label: "Share",
+                    icon: "↗️",
+                    action: () => setPetal("share"),
+                  },
+                ],
+              },
+              {
+                id: "profile",
+                label: "Profile",
+                icon: (
+                  <img
+                    src={ctxPost?.authorAvatar || "/avatar.jpg"}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ),
+                action: () => {
+                  if (ctxPost) bus.emit?.("profile:open", { id: ctxPost.author });
+                },
+              },
+            ];
+            return (
+              <RadialMenu
+                center={{ x: pos.x + ORB_SIZE / 2, y: pos.y + ORB_SIZE / 2 }}
+                onClose={() => {
+                  setMenuOpen(false);
+                  orbRef.current?.focus();
+                }}
+                items={items}
+              />
+            );
+          })()}
         </>
       )}
 
