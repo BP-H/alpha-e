@@ -66,7 +66,18 @@ export default function Sidebar() {
 
   return (
     <>
-      {open && <div className="sb-scrim" onClick={() => setOpen(false)} aria-label="Close sidebar" />}
+      {open && (
+        <div
+          className="sb-scrim"
+          role="button"
+          tabIndex={0}
+          onClick={() => setOpen(false)}
+          onKeyDown={e => {
+            if (e.key === "Escape") setOpen(false);
+          }}
+          aria-label="Close sidebar"
+        />
+      )}
       <aside className={`sb ${open ? "open" : ""}`}>
         {open && (
           <div className="sb-panel" role="dialog" aria-modal="true">
