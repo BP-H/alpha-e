@@ -53,7 +53,7 @@ export default function RadialMenu({
         icon: (
           <img
             src={avatarUrl}
-            alt=""
+            alt="Profile avatar"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ),
