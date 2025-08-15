@@ -21,15 +21,20 @@ export default function PortalOrb({ onAnalyzeImage }: Props) {
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [menuIndex, setMenuIndex] = useState(0);
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
-    const saved = localStorage.getItem("orb-pos");
-    return saved ? JSON.parse(saved) : { x: 16, y: 16 };
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("orb-pos");
+      return saved ? JSON.parse(saved) : { x: 16, y: 16 };
+    }
+    return { x: 16, y: 16 };
   });
   const [dragging, setDragging] = useState(false);
   const lastTap = useRef<number>(0);
   const analyzeOverlay = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    localStorage.setItem("orb-pos", JSON.stringify(pos));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("orb-pos", JSON.stringify(pos));
+    }
     if (orbRef.current) {
       orbRef.current.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
     }
