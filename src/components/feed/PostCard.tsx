@@ -199,7 +199,9 @@ export default function PostCard({ post }: { post: Post }) {
                   } catch {}
                 } else {
                   try {
-                    console.warn?.("Clipboard not available");
+                    if (typeof alert === "function") {
+                      alert("Clipboard not available");
+                    }
                   } catch {}
                 }
               }}
