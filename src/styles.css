@@ -22,6 +22,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   --feed-max: min(100%, 1200px);
   --stripe-h: 64px;
   --orb-size: 76px;
+  --orb-color: var(--pink);
 
   /* Theme accents */
   --pink: #ff74de;   /* Assistant orb theme */

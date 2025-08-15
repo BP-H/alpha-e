@@ -1,5 +1,52 @@
-.assistant-orb{position:fixed;width:76px;height:76px;border-radius:50%;border:none;padding:0;background:transparent;touch-action:none;}
-.assistant-orb__core{position:absolute;inset:8px;border-radius:50%;background:#4b6;}
-.assistant-orb__ring{position:absolute;inset:0;border-radius:50%;border:2px solid #4b6;animation:ping 2s infinite;}
-.assistant-orb__toast{position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px;}
-@keyframes ping{from{transform:scale(.9);opacity:.6;}to{transform:scale(1.4);opacity:0;}}
+.assistant-orb {
+  position: fixed;
+  width: var(--orb-size);
+  height: var(--orb-size);
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  touch-action: none;
+  transition: transform .2s ease;
+}
+
+.assistant-orb__core {
+  position: absolute;
+  inset: calc(var(--orb-size) * 0.105);
+  border-radius: 50%;
+  background: radial-gradient(120% 120% at 30% 30%, #fff,
+    color-mix(in srgb, var(--orb-color) 60%, #fff 40%) 60%, var(--orb-color));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--orb-color) 30%, transparent);
+  transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+
+.assistant-orb__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--orb-color) 70%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--orb-color) 20%, transparent);
+  animation: ping 2s infinite;
+  transition: border-color .25s ease, box-shadow .25s ease, opacity .25s ease,
+    transform .25s ease;
+}
+
+.assistant-orb__toast {
+  position: absolute;
+  top: calc(var(--orb-size) * -0.39);
+  left: 50%;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  color: var(--ink);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.4);
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+@keyframes ping {
+  from { transform: scale(.9); opacity: .6; }
+  to { transform: scale(1.4); opacity: 0; }
+}
+
