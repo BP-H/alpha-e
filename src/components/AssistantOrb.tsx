@@ -4,15 +4,13 @@ import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
 
 /**
- * Assistant Orb — 60fps drag + circular quick menu.
- * - Chat on top (opens panel)
- * - Quick selectors bottom arc: Remix / React / Comment
- * - Left: Profile chip (hovered/selected post author)
- * - Petal drawers for quick actions
- * - Blob-safe, SSR-safe; fixes previous TS comma error
+ * Assistant Orb — circular quick menu + 60fps drag + voice.
+ * - Tap = show radial menu (Chat top / React / Comment / Remix / Profile)
+ * - Hold = push-to-talk; Double-click = toggle mic
+ * - Drag (cross threshold) also starts mic; drop over post links context
+ * - Petal drawers for React/Comment/Remix; Chat panel on side
  */
 
-/* Minimal SpeechRecognition type */
 type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
@@ -30,7 +28,7 @@ const ORB_MARGIN = 12;
 const HOLD_MS = 280;
 const DRAG_THRESHOLD = 5;
 const PANEL_WIDTH = 360;
-const STORAGE_KEY = "assistantOrbPos.v5";
+const STORAGE_KEY = "assistantOrbPos.v6";
 
 const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
 const uuid = () => {
@@ -48,12 +46,10 @@ const EMOJI_LIST: string[] = [
   "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩"
 ];
 
-/** LLM stub; swap for a real call when wired */
 async function askLLMStub(text: string) {
   return `🤖 I’m a stub, but I heard: “${text}”`;
 }
 
-/** Works on Element */
 function getClosestPostId(el: Element | null): string | null {
   return el?.closest?.("[data-post-id]")?.getAttribute?.("data-post-id") ?? null;
 }
@@ -80,7 +76,7 @@ export default function AssistantOrb() {
   const posRef = useRef<{ x: number; y: number }>({ ...pos });
 
   // UI
-  const [open, setOpen] = useState(false);       // chat/panel
+  const [open, setOpen] = useState(false);       // chat panel
   const [mic, setMic] = useState(false);
   const [toast, setToast] = useState("");
   const [interim, setInterim] = useState("");
@@ -88,11 +84,9 @@ export default function AssistantOrb() {
   const [ctxPost, setCtxPost] = useState<Post | null>(null);
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
-
-  // drawers: "react" | "comment" | "remix" | "share" | null
   const [petal, setPetal] = useState<null | "react" | "comment" | "remix" | "share">(null);
 
-  // gesture refs
+  // gestures
   const movedRef = useRef(false);
   const pressRef = useRef<{ id: number; dx: number; dy: number; sx: number; sy: number } | null>(null);
   const holdTimerRef = useRef<number | null>(null);
@@ -108,8 +102,6 @@ export default function AssistantOrb() {
   const interimRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const msgListRef = useRef<HTMLDivElement | null>(null);
-
-  // radial button refs (chat top, react bl, comment bottom, remix br, profile left)
   const btnChatRef   = useRef<HTMLButtonElement | null>(null);
   const btnReactRef  = useRef<HTMLButtonElement | null>(null);
   const btnCommentRef= useRef<HTMLButtonElement | null>(null);
@@ -207,7 +199,6 @@ export default function AssistantOrb() {
       return;
     }
 
-    // fallback (stub)
     const resp = await askLLMStub(T);
     push({ id: uuid(), role: "assistant", text: resp, ts: Date.now() });
   }
@@ -250,7 +241,6 @@ export default function AssistantOrb() {
     el.style.top = `${by}px`;
   }
 
-  /** Position toasts / interim / panel + radial buttons */
   function updateAnchors() {
     if (typeof window === "undefined") return;
     const { x, y } = posRef.current;
@@ -261,7 +251,6 @@ export default function AssistantOrb() {
     const placeRightPanel = spaceRight >= (measuredPanelW + 16);
     const placeRightToast = spaceRight >= 200;
 
-    // toast
     if (toastRef.current) {
       const s = toastRef.current.style;
       s.position = "fixed";
@@ -270,7 +259,6 @@ export default function AssistantOrb() {
       s.transform = placeRightToast ? "translateY(-50%)" : "translate(-100%, -50%)";
     }
 
-    // interim
     if (interimRef.current) {
       const s = interimRef.current.style;
       s.position = "fixed";
@@ -279,25 +267,16 @@ export default function AssistantOrb() {
       s.transform = placeRightToast ? "none" : "translateX(-100%)";
     }
 
-    // panel
     if (panelEl && open) {
       const s = panelEl.style;
       const panelH = panelEl.offsetHeight || 260;
       const top = clamp(y - 180, ORB_MARGIN, Math.max(ORB_MARGIN, window.innerHeight - panelH - ORB_MARGIN));
       s.position = "fixed";
       s.top = `${top}px`;
-      if (placeRightPanel) {
-        s.left = `${x + ORB_SIZE + 8}px`;
-        s.right = "";
-        s.transform = "none";
-      } else {
-        s.left = `${x - 8}px`;
-        s.right = "";
-        s.transform = "translateX(-100%)";
-      }
+      if (placeRightPanel) { s.left = `${x + ORB_SIZE + 8}px`; s.right = ""; s.transform = "none"; }
+      else { s.left = `${x - 8}px`; s.right = ""; s.transform = "translateX(-100%)"; }
     }
 
-    // radial buttons
     if (menuOpen && !dragging) {
       place(btnChatRef.current!,    84, -90); // top
       place(btnReactRef.current!,   74, 220); // bottom-left
@@ -344,7 +323,8 @@ export default function AssistantOrb() {
       if (!movedRef.current && Math.hypot(cur.x - sx, cur.y - sy) > DRAG_THRESHOLD) {
         movedRef.current = true;
         preventTapRef.current = true;
-        if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
+        // Start listening once drag threshold is crossed (your request)
+        if (!mic) { suppressClickRef.current = true; startListening(); }
       }
 
       posRef.current = { x: nx, y: ny };
@@ -368,7 +348,7 @@ export default function AssistantOrb() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(posRef.current)); } catch {}
     updateAnchors();
 
-    if (mic && suppressClickRef.current) {
+    if (mic && (suppressClickRef.current || movedRef.current)) {
       stopListening();
       if (movedRef.current) {
         const under = document.elementFromPoint(clientX, clientY);
@@ -407,13 +387,17 @@ export default function AssistantOrb() {
       preventTapRef.current = false;
       return;
     }
-    // tap toggles the radial menu
     setMenuOpen(v => !v);
     requestAnimationFrame(updateAnchors);
   };
 
+  // double‑click toggles mic
+  const onDoubleClick = () => {
+    if (mic) stopListening(); else startListening();
+  };
+
   // lifecycle
-  useEffect(() => { applyTransform(pos.x, pos.y); posRef.current = { ...pos }; updateAnchors(); }, []); // initial
+  useEffect(() => { applyTransform(pos.x, pos.y); posRef.current = { ...pos }; updateAnchors(); }, []);
   useEffect(() => { updateAnchors(); }, [open, toast, interim, menuOpen, dragging]);
   useEffect(() => { if (msgListRef.current) msgListRef.current.scrollTop = msgListRef.current.scrollHeight; }, [msgs]);
 
@@ -431,11 +415,7 @@ export default function AssistantOrb() {
 
     window.addEventListener("resize", onResize);
     window.addEventListener("keydown", onKey);
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => { window.removeEventListener("resize", onResize); window.removeEventListener("keydown", onKey); };
   }, []);
 
   useEffect(() => {
@@ -502,8 +482,6 @@ export default function AssistantOrb() {
     backdropFilter: "blur(10px) saturate(140%)",
     animation: "panelIn .2s ease-out",
   };
-
-  // radial button factory
   const rbtn: React.CSSProperties = {
     position: "fixed",
     zIndex: 9998,
@@ -518,7 +496,6 @@ export default function AssistantOrb() {
     backdropFilter: "blur(8px) saturate(140%)",
   };
 
-  // render
   return (
     <>
       <style>{keyframes}</style>
@@ -526,7 +503,7 @@ export default function AssistantOrb() {
       <button
         ref={orbRef}
         aria-label="Assistant orb"
-        title="Tap for quick menu • Hold to talk • Drag to link a post"
+        title="Tap for quick menu • Hold/drag to talk • Double‑click to talk"
         style={orbStyle}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -534,6 +511,7 @@ export default function AssistantOrb() {
         onPointerCancel={onPointerEnd}
         onLostPointerCapture={onLostPointerCapture}
         onClick={onClick}
+        onDoubleClick={onDoubleClick}
         onMouseEnter={() => { setMenuOpen(true); requestAnimationFrame(updateAnchors); }}
         onMouseLeave={() => { if (!dragging) setMenuOpen(false); }}
       >
@@ -544,81 +522,33 @@ export default function AssistantOrb() {
       {/* Radial menu */}
       {menuOpen && !dragging && (
         <>
-          {/* Chat (top) */}
-          <button
-            ref={btnChatRef}
-            style={rbtn}
-            aria-label="Chat"
-            title="Chat"
-            onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}
-          >💬</button>
-
-          {/* React (bottom-left) */}
-          <button
-            ref={btnReactRef}
-            style={rbtn}
-            aria-label="React"
-            title="React"
-            onClick={() => setPetal("react")}
-          >👏</button>
-
-          {/* Comment (bottom) */}
-          <button
-            ref={btnCommentRef}
-            style={rbtn}
-            aria-label="Comment"
-            title="Comment"
-            onClick={() => setPetal("comment")}
-          >✍️</button>
-
-          {/* Remix (bottom-right) */}
-          <button
-            ref={btnRemixRef}
-            style={rbtn}
-            aria-label="Remix"
-            title="Remix"
-            onClick={() => setPetal("remix")}
-          >🎬</button>
-
-          {/* Profile (left) */}
-          <button
-            ref={btnProfileRef}
-            style={{ ...rbtn, padding: 0, overflow: "hidden" }}
-            aria-label="Profile"
-            title="Profile"
-            onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}
-          >
-            <img
-              src={ctxPost?.authorAvatar || "/avatar.jpg"}
-              alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
+          <button ref={btnChatRef} style={rbtn} aria-label="Chat" title="Chat" onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}>💬</button>
+          <button ref={btnReactRef} style={rbtn} aria-label="React" title="React" onClick={() => setPetal("react")}>👏</button>
+          <button ref={btnCommentRef} style={rbtn} aria-label="Comment" title="Comment" onClick={() => setPetal("comment")}>✍️</button>
+          <button ref={btnRemixRef} style={rbtn} aria-label="Remix" title="Remix" onClick={() => setPetal("remix")}>🎬</button>
+          <button ref={btnProfileRef} style={{ ...rbtn, padding: 0, overflow: "hidden" }} aria-label="Profile" title="Profile" onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}>
+            <img src={ctxPost?.authorAvatar || "/avatar.jpg"} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </button>
         </>
       )}
 
-      {/* toast + interim follow via updateAnchors() */}
-      {toast && <div ref={toastRef} className="assistant-orb__toast" aria-live="polite">{toast}</div>}
-      {interim && <div ref={interimRef} className="assistant-orb__toast interim" aria-live="polite">…{interim}</div>}
+      {/* toast + interim */}
+      {toast && <div ref={toastRef} style={toastBoxStyle} aria-live="polite">{toast}</div>}
+      {interim && <div ref={interimRef} style={toastBoxStyle} aria-live="polite">…{interim}</div>}
 
       {/* Chat panel */}
       {open && (
-        <div ref={panelRef} className="assistant-panel">
+        <div ref={panelRef} style={panelStyle}>
           <div style={{ fontWeight: 800, paddingBottom: 4, display: "flex", alignItems: "center" }}>
             Assistant
             <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.6, paddingLeft: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {ctxPost ? `(Context: ${ctxPost.id})` : ""}
             </span>
-            <button
-              onClick={() => setOpen(false)}
-              style={{ marginLeft: "auto", height: 28, padding: "0 10px", borderRadius: 8, cursor: "pointer", background: "rgba(255,255,255,.08)", color: "#fff", border: "1px solid rgba(255,255,255,.16)" }}
-              aria-label="Close"
-            >✕</button>
+            <button onClick={() => setOpen(false)} style={{ marginLeft: "auto", height: 28, padding: "0 10px", borderRadius: 8, cursor: "pointer", background: "rgba(255,255,255,.08)", color: "#fff", border: "1px solid rgba(255,255,255,.16)" }} aria-label="Close">✕</button>
           </div>
 
-          {/* messages */}
           <div ref={msgListRef} style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto", padding: "6px 0" }}>
-            {msgs.length === 0 && <div style={{ fontSize: 13, opacity: .75 }}>Hold to speak, type a command, or use the quick menu.</div>}
+            {msgs.length === 0 && <div style={{ fontSize: 13, opacity: .75 }}>Hold/drag or double‑click to speak, or use the quick menu.</div>}
             {msgs.map(m => (
               <div key={m.id} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                 <div style={{ maxWidth: "80%", background: m.role === "user" ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.06)", padding: "8px 10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.12)" }}>
@@ -635,7 +565,6 @@ export default function AssistantOrb() {
             )}
           </div>
 
-          {/* input row */}
           <form
             onSubmit={async e => {
               e.preventDefault();
@@ -661,13 +590,7 @@ export default function AssistantOrb() {
             >
               {mic ? "🎙️" : "🎤"}
             </button>
-            <button
-              type="submit"
-              style={{ height: 36, padding: "0 12px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}
-              aria-label="Send"
-            >
-              ➤
-            </button>
+            <button type="submit" style={{ height: 36, padding: "0 12px", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }} aria-label="Send">➤</button>
           </form>
         </div>
       )}
@@ -711,10 +634,7 @@ export default function AssistantOrb() {
           {petal === "remix" && (
             <div className="ap-body">
               <div className="ap-hint">Make a quick remix of the current post. Uses defaults.</div>
-              <button
-                className="ap-btn"
-                onClick={() => { if (ctxPost) { bus.emit?.("post:remix", { id: ctxPost.id }); setPetal(null); } }}
-              >
+              <button className="ap-btn" onClick={() => { if (ctxPost) { bus.emit?.("post:remix", { id: ctxPost.id }); setPetal(null); } }}>
                 Remix 🎬
               </button>
             </div>
