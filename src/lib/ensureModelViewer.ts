@@ -6,12 +6,16 @@ export function ensureModelViewer(): Promise<void> {
   if (customElements.get("model-viewer")) return Promise.resolve();
   if (loading) return loading;
 
-  loading = new Promise<void>((resolve) => {
+  loading = new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
     script.type = "module";
     script.src =
       "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
     script.onload = () => resolve();
+    script.onerror = (err) => {
+      loading = null;
+      reject(err instanceof Error ? err : new Error("Failed to load model-viewer"));
+    };
     document.head.appendChild(script);
   });
 
