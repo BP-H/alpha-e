@@ -5,7 +5,18 @@ import "./AvatarPortal.css";
 
 export default function AvatarPortal(){
   const [on, setOn] = useState(false);
-  useEffect(() => bus.on("avatar-portal:open", () => { setOn(true); setTimeout(()=>setOn(false), 900); }), []);
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const off = bus.on("avatar-portal:open", () => {
+      setOn(true);
+      timeoutId = setTimeout(() => setOn(false), 900);
+    });
+
+    return () => {
+      off();
+      clearTimeout(timeoutId);
+    };
+  }, []);
   return on ? (
     <div className="avatar-portal">
       <div className="ap-splash" />
