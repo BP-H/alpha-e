@@ -31,6 +31,9 @@ export default function PostCard({ post }: { post: Post }) {
     };
   }, [post.id]);
 
+  const isBlob = (u?: string | null) =>
+    typeof u === "string" && u.startsWith("blob:");
+
   // Build image list (images[] preferred, else image/cover, else fallback)
   const images = useMemo(() => {
     const out: string[] = [];
@@ -93,7 +96,7 @@ export default function PostCard({ post }: { post: Post }) {
             controls
             playsInline
             preload="metadata"
-            crossOrigin="anonymous"
+            crossOrigin={isBlob(video) ? undefined : "anonymous"}
             onLoadedData={onMediaReady}
             style={{ opacity: 0 }}
           />
@@ -105,10 +108,10 @@ export default function PostCard({ post }: { post: Post }) {
                 src={src}
                 alt={post?.title || post?.author || "post"}
                 loading="lazy"
-                crossOrigin="anonymous"
+                crossOrigin={isBlob(src) ? undefined : "anonymous"}
                 onLoad={onMediaReady}
                 className={i === imgIndex ? "active" : ""}
-                style={{ display: i === imgIndex ? "block" : "none" }}
+                style={{ display: i === imgIndex ? "block" : "none", opacity: 0 }}
               />
             ))}
             {images.length > 1 && (
@@ -160,39 +163,32 @@ export default function PostCard({ post }: { post: Post }) {
           {post?.title && <div className="pc-title">{post.title}</div>}
         </div>
 
+        {/* Icon-only actions: profile (avatar), engage(heart), comment, world, remix */}
         <div className="pc-botbar">
           <div className="pc-actions">
-            <button className="pc-act profile" title="Profile">
+            {/* author profile chip */}
+            <button className="pc-act profile" title="Profile" onClick={() => bus.emit?.("profile:open", { id: post?.author })}>
               <span className="ico" aria-hidden />
-              <span>{post?.author?.replace?.("@", "") || "profile"}</span>
             </button>
-            <button
-              className="pc-act"
-              onClick={() => setDrawer((v) => !v)}
-              title="Like"
-            >
+
+            {/* engage (heart) */}
+            <button className="pc-act" title="Engage" onClick={() => bus.emit?.("post:react", { id: post.id, emoji: "❤️" })}>
               <span className="ico heart" />
-              <span>Like</span>
             </button>
-            <button
-              className="pc-act"
-              onClick={() => setDrawer((v) => !v)}
-              title="Comment"
-            >
+
+            {/* comment */}
+            <button className="pc-act" title="Comment" onClick={() => setDrawer((v) => !v)}>
               <span className="ico comment" />
-              <span>Comment</span>
             </button>
-            <button
-              className="pc-act"
-              title="World"
-              onClick={() => bus.emit?.("orb:portal", { post, x: 0, y: 0 })}
-            >
+
+            {/* world / portal */}
+            <button className="pc-act" title="World" onClick={() => bus.emit?.("orb:portal", { post, x: 0, y: 0 })}>
               <span className="ico world" />
-              <span>World</span>
             </button>
-            <button className="pc-act" title="Save">
-              <span className="ico save" />
-              <span>Save</span>
+
+            {/* remix (uses simple emoji icon so we don't need new mask CSS) */}
+            <button className="pc-act" title="Remix" onClick={() => bus.emit?.("post:remix", { id: post.id })}>
+              <span style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>🎬</span>
             </button>
           </div>
         </div>
