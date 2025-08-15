@@ -28,7 +28,7 @@
 .sb-x { width: 32px; height: 32px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.10); color: #fff; cursor: pointer; }
 .sb-brand { display: flex; gap: 10px; align-items: center; font-weight: 900; letter-spacing: .2px; }
 /* Small orb in sidebar header, now blue-themed */
-.sb-orb { 
+.sb-orb {
   width: 26px; height: 26px; border-radius: 999px;
   border: 1px solid rgba(255,255,255,.18);
   background: radial-gradient(120% 120% at 30% 30%, #fff, #a0c4ff 60%, var(--accent));
@@ -36,4 +36,18 @@
 }
 .sb-logo { /* superNova text styling if needed (inherits font styles) */ }
 
+.sb-nav { margin-bottom: 12px; }
+.sb-nav ul { list-style: none; display: flex; gap: 8px; padding: 0; }
+.sb-nav a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+.sb-nav a[aria-current="page"] { background: rgba(255,255,255,.1); }
+
 .card { /* ...unchanged card styles... */ }
+
