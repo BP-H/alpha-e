@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import bus from "../lib/bus";
+import { useTheme } from "../lib/useTheme";
 
 type Keys = { openai?: string; anthropic?: string; perplexity?: string; stability?: string; elevenlabs?: string; };
 
@@ -38,15 +39,14 @@ export default function Sidebar() {
   const [bio, setBio] = useLocal("sn.profile.bio", "I bend worlds with orbs and postcards.");
   const [avatar, setAvatar] = useLocal("sn.profile.avatar", "/avatar.jpg");
 
-  const [theme, setTheme] = useLocal<"dark"|"light">("sn.theme", "dark");
+  const [theme, setTheme] = useTheme();
   const [accent, setAccent] = useLocal("sn.accent", "#7c83ff");
   const [worldMode, setWorldMode] = useLocal<"orbs"|"matrix">("sn.world.mode", "orbs");
   const [orbCount, setOrbCount] = useLocal("sn.world.count", 64);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--accent", accent);
-    document.documentElement.dataset.theme = theme;
-  }, [accent, theme]);
+  }, [accent]);
 
   const [keys, setKeys] = useLocal<Keys>("sn.keys", {});
   const [showKey, setShowKey] = useState<string | null>(null);
