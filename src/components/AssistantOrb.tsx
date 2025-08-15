@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import type { AssistantMessage, Post } from "../types";
+import RadialMenu from "./RadialMenu";
 
 /**
  * Assistant Orb — circular quick menu + 60fps drag + voice.
@@ -84,9 +85,7 @@ export default function AssistantOrb() {
   const [ctxPost, setCtxPost] = useState<Post | null>(null);
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
-  const [petal, setPetal] = useState<null | "react" | "comment" | "remix" | "share">(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const [menuIndex, setMenuIndex] = useState(0);
+  const [petal, setPetal] = useState<null | "comment" | "remix" | "share">(null);
 
   // gestures
   const movedRef = useRef(false);
@@ -104,11 +103,6 @@ export default function AssistantOrb() {
   const interimRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const msgListRef = useRef<HTMLDivElement | null>(null);
-  const btnChatRef   = useRef<HTMLButtonElement | null>(null);
-  const btnReactRef  = useRef<HTMLButtonElement | null>(null);
-  const btnCommentRef= useRef<HTMLButtonElement | null>(null);
-  const btnRemixRef  = useRef<HTMLButtonElement | null>(null);
-  const btnProfileRef= useRef<HTMLButtonElement | null>(null);
 
   // feed context
   useEffect(() => {
@@ -230,19 +224,6 @@ export default function AssistantOrb() {
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  function place(el: HTMLElement | null, rad: number, deg: number) {
-    if (!el) return;
-    const { x, y } = posRef.current;
-    const cx = x + ORB_SIZE / 2;
-    const cy = y + ORB_SIZE / 2;
-    const a = (deg * Math.PI) / 180;
-    const bx = cx + rad * Math.cos(a) - el.offsetWidth / 2;
-    const by = cy + rad * Math.sin(a) - el.offsetHeight / 2;
-    el.style.position = "fixed";
-    el.style.left = `${bx}px`;
-    el.style.top = `${by}px`;
-  }
-
   function updateAnchors() {
     if (typeof window === "undefined") return;
     const { x, y } = posRef.current;
@@ -272,19 +253,22 @@ export default function AssistantOrb() {
     if (panelEl && open) {
       const s = panelEl.style;
       const panelH = panelEl.offsetHeight || 260;
-      const top = clamp(y - 180, ORB_MARGIN, Math.max(ORB_MARGIN, window.innerHeight - panelH - ORB_MARGIN));
+      const top = clamp(
+        y - 180,
+        ORB_MARGIN,
+        Math.max(ORB_MARGIN, window.innerHeight - panelH - ORB_MARGIN)
+      );
       s.position = "fixed";
       s.top = `${top}px`;
-      if (placeRightPanel) { s.left = `${x + ORB_SIZE + 8}px`; s.right = ""; s.transform = "none"; }
-      else { s.left = `${x - 8}px`; s.right = ""; s.transform = "translateX(-100%)"; }
-    }
-
-    if (menuOpen && !dragging) {
-      place(btnChatRef.current!,    84, -90); // top
-      place(btnReactRef.current!,   74, 220); // bottom-left
-      place(btnCommentRef.current!, 78, 270); // bottom
-      place(btnRemixRef.current!,   74, 320); // bottom-right
-      place(btnProfileRef.current!, 74, 180); // left
+      if (placeRightPanel) {
+        s.left = `${x + ORB_SIZE + 8}px`;
+        s.right = "";
+        s.transform = "none";
+      } else {
+        s.left = `${x - 8}px`;
+        s.right = "";
+        s.transform = "translateX(-100%)";
+      }
     }
   }
 
@@ -484,19 +468,6 @@ export default function AssistantOrb() {
     backdropFilter: "blur(10px) saturate(140%)",
     animation: "panelIn .2s ease-out",
   };
-  const rbtn: React.CSSProperties = {
-    position: "fixed",
-    zIndex: 9998,
-    width: 40, height: 40,
-    borderRadius: 999,
-    display: "grid",
-    placeItems: "center",
-    background: "rgba(14,16,22,.7)",
-    border: "1px solid rgba(255,255,255,.15)",
-    color: "#fff",
-    cursor: "pointer",
-    backdropFilter: "blur(8px) saturate(140%)",
-  };
 
   function handleOrbKeyDown(e: React.KeyboardEvent) {
     const k = e.key.toLowerCase();
@@ -508,7 +479,7 @@ export default function AssistantOrb() {
       mic ? stopListening() : startListening();
     } else if (k === "r") {
       e.preventDefault();
-      setPetal("react"); setMenuOpen(false);
+      setMenuOpen(true);
     } else if (k === "c") {
       e.preventDefault();
       setPetal("comment"); setMenuOpen(false);
@@ -523,43 +494,6 @@ export default function AssistantOrb() {
     }
   }
 
-  function handleMenuKey(e: React.KeyboardEvent) {
-    const items = [
-      btnChatRef.current,
-      btnReactRef.current,
-      btnCommentRef.current,
-      btnRemixRef.current,
-      btnProfileRef.current,
-    ].filter(Boolean) as HTMLButtonElement[];
-    if (!items.length) return;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
-      e.preventDefault();
-      const next = (menuIndex + 1) % items.length;
-      setMenuIndex(next);
-      items[next]?.focus();
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
-      e.preventDefault();
-      const next = (menuIndex - 1 + items.length) % items.length;
-      setMenuIndex(next);
-      items[next]?.focus();
-    } else if (e.key === "Escape") {
-      setMenuOpen(false);
-      setPetal(null);
-      orbRef.current?.focus();
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      items[menuIndex]?.click();
-    }
-  }
-
-  useEffect(() => {
-    if (menuOpen) {
-      setMenuIndex(0);
-      btnChatRef.current?.focus();
-    } else {
-      orbRef.current?.focus();
-    }
-  }, [menuOpen]);
 
   return (
     <>
@@ -589,74 +523,38 @@ export default function AssistantOrb() {
 
       {/* Radial menu */}
       {menuOpen && !dragging && (
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label="Assistant actions"
-          onKeyDown={handleMenuKey}
-          aria-activedescendant={`assistant-menu-item-${menuIndex}`}
-        >
-          <button
-            ref={btnChatRef}
-            style={rbtn}
-            aria-label="Chat"
-            title="Chat"
-            role="menuitem"
-            tabIndex={menuIndex === 0 ? 0 : -1}
-            id="assistant-menu-item-0"
-            onClick={() => { setOpen(v => !v); setPetal(null); requestAnimationFrame(updateAnchors); }}
-          >
-            💬
-          </button>
-          <button
-            ref={btnReactRef}
-            style={rbtn}
-            aria-label="React"
-            title="React"
-            role="menuitem"
-            tabIndex={menuIndex === 1 ? 0 : -1}
-            id="assistant-menu-item-1"
-            onClick={() => setPetal("react")}
-          >
-            👏
-          </button>
-          <button
-            ref={btnCommentRef}
-            style={rbtn}
-            aria-label="Comment"
-            title="Comment"
-            role="menuitem"
-            tabIndex={menuIndex === 2 ? 0 : -1}
-            id="assistant-menu-item-2"
-            onClick={() => setPetal("comment")}
-          >
-            ✍️
-          </button>
-          <button
-            ref={btnRemixRef}
-            style={rbtn}
-            aria-label="Remix"
-            title="Remix"
-            role="menuitem"
-            tabIndex={menuIndex === 3 ? 0 : -1}
-            id="assistant-menu-item-3"
-            onClick={() => setPetal("remix")}
-          >
-            🎬
-          </button>
-          <button
-            ref={btnProfileRef}
-            style={{ ...rbtn, padding: 0, overflow: "hidden" }}
-            aria-label="Profile"
-            title="Profile"
-            role="menuitem"
-            tabIndex={menuIndex === 4 ? 0 : -1}
-            id="assistant-menu-item-4"
-            onClick={() => ctxPost && bus.emit?.("profile:open", { id: ctxPost.author })}
-          >
-            <img src={ctxPost?.authorAvatar || "/avatar.jpg"} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </button>
-        </div>
+        <RadialMenu
+          center={{ x: pos.x + ORB_SIZE / 2, y: pos.y + ORB_SIZE / 2 }}
+          onClose={() => setMenuOpen(false)}
+          onChat={() => {
+            setOpen(v => !v);
+            setPetal(null);
+            setMenuOpen(false);
+            requestAnimationFrame(updateAnchors);
+          }}
+          onReact={(e) => {
+            handleEmojiClick(e);
+            setMenuOpen(false);
+          }}
+          onComment={() => {
+            setPetal("comment");
+            setMenuOpen(false);
+          }}
+          onRemix={() => {
+            setPetal("remix");
+            setMenuOpen(false);
+          }}
+          onShare={() => {
+            setPetal("share");
+            setMenuOpen(false);
+          }}
+          onProfile={() => {
+            if (ctxPost) bus.emit?.("profile:open", { id: ctxPost.author });
+            setMenuOpen(false);
+          }}
+          avatarUrl={ctxPost?.authorAvatar || "/avatar.jpg"}
+          emojis={EMOJI_LIST.slice(0, 8)}
+        />
       )}
 
       {/* toast + interim */}
@@ -727,18 +625,10 @@ export default function AssistantOrb() {
         <div className="assistant-petal">
           <div className="ap-head">
             <div className="ap-dot" />
-            <div className="ap-title">{petal === "react" ? "React" : petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
+          <div className="ap-title">{petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
             <div className="ap-sub">{ctxPost ? `Post ${ctxPost.id}` : "Hover a post to target"}</div>
             <button className="ap-btn" onClick={() => setPetal(null)}>Close</button>
           </div>
-
-          {petal === "react" && (
-            <div className="ap-emojis">
-              {EMOJI_LIST.map(e => (
-                <button key={e} className="emoji-btn" onClick={() => handleEmojiClick(e)} title={`React ${e}`} aria-label={`React ${e}`}>{e}</button>
-              ))}
-            </div>
-          )}
 
           {petal === "comment" && (
             <form
