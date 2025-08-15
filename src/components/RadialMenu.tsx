@@ -30,6 +30,8 @@ export default function RadialMenu({
   const [step, setStep] = useState<"root" | "react" | "react-all" | "create">("root");
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
+  const [origin, setOrigin] = useState(center);
+  const [angleOffset, setAngleOffset] = useState(0);
 
   useEffect(() => {
     menuRef.current?.focus();
@@ -104,6 +106,37 @@ export default function RadialMenu({
       ? reactAllItems
       : createItems;
 
+  const clamp = (n: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, n));
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const radius = step === "root" ? 74 : 120;
+    const pad = radius + 20; // button size / 2
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const cx = clamp(center.x, pad, vw - pad);
+    const cy = clamp(center.y, pad, vh - pad);
+    setOrigin({ x: cx, y: cy });
+
+    const nearLeft = center.x < pad;
+    const nearRight = center.x > vw - pad;
+    const nearTop = center.y < pad;
+    const nearBottom = center.y > vh - pad;
+
+    let rot = 0;
+    if (nearLeft && nearTop) rot = 45;
+    else if (nearLeft && nearBottom) rot = -45;
+    else if (nearRight && nearTop) rot = 135;
+    else if (nearRight && nearBottom) rot = -135;
+    else if (nearLeft) rot = 90;
+    else if (nearRight) rot = -90;
+    else if (nearBottom) rot = 180;
+    else rot = 0;
+    setAngleOffset(rot);
+  }, [center, step]);
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
@@ -145,7 +178,8 @@ export default function RadialMenu({
     backdropFilter: "blur(8px) saturate(140%)",
   };
 
-  const angleFor = (i: number, len: number) => (360 / len) * i - 90;
+  const angleFor = (i: number, len: number, offset = 0) =>
+    (360 / len) * i - 90 + offset;
 
   function renderItem(
     item: any,
@@ -154,7 +188,7 @@ export default function RadialMenu({
     radius: number,
     len: number
   ) {
-    const rad = (angleFor(i, len) * Math.PI) / 180;
+    const rad = (angleFor(i, len, angleOffset) * Math.PI) / 180;
     const x = radius * Math.cos(rad) - 20;
     const y = radius * Math.sin(rad) - 20;
     return (
@@ -210,7 +244,7 @@ export default function RadialMenu({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       aria-activedescendant={`assistant-menu-item-${activeId}`}
-      style={{ position: "fixed", left: center.x, top: center.y, width: 0, height: 0, zIndex: 9998 }}
+      style={{ position: "fixed", left: origin.x, top: origin.y, width: 0, height: 0, zIndex: 9998 }}
     >
       {step === "root" && (
         <AnimatePresence>
