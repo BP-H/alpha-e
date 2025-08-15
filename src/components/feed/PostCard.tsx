@@ -113,17 +113,20 @@ export default function PostCard({ post }: { post: Post }) {
         ) : imgCount > 1 ? (
           <>
             <div className={`pc-gallery pc-n${Math.min(4, imgCount)}`}>
-              {gridImages.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt={post?.title || post?.author || "post"}
-                  loading="lazy"
-                  crossOrigin={isBlob(src) ? undefined : "anonymous"}
-                  className={`pc-tile ${imgReady[i] ? "ready" : ""}`}
-                  onLoad={() => onImgLoad(i)}
-                />
-              ))}
+              {gridImages.map((src, i) => {
+                const key = gridImages.indexOf(src) === i ? src : `${src}-${i}`;
+                return (
+                  <img
+                    key={key}
+                    src={src}
+                    alt={post?.title || post?.author || "post"}
+                    loading="lazy"
+                    crossOrigin={isBlob(src) ? undefined : "anonymous"}
+                    className={`pc-tile ${imgReady[i] ? "ready" : ""}`}
+                    onLoad={() => onImgLoad(i)}
+                  />
+                );
+              })}
             </div>
             {extra > 0 && <div className="pc-more">+{extra}</div>}
           </>
