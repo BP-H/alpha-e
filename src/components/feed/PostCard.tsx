@@ -107,7 +107,8 @@ export default function PostCard({ post }: { post: Post }) {
               src={pdf}
               title="PDF"
               onLoad={onMediaReady}
-              style={{ opacity: 0 }}
+              width="100%"
+              style={{ opacity: 0, height: "56vw" }}
             />
           ) : model3d ? (
             <model-viewer
