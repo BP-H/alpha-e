@@ -1,53 +1,60 @@
-import React from "react";
-import { logError } from "../lib/logger";
+import React, { ReactNode } from "react";
 
-type Props = { children?: React.ReactNode };
-type State = { hasError: boolean; error?: unknown };
+type Props = {
+  children: ReactNode;
+  /**
+   * Optional React fallback to render when an error is caught.
+   * If not provided, a minimal inline alert is shown.
+   */
+  fallback?: ReactNode;
+};
+
+type State = {
+  hasError: boolean;
+  error?: Error;
+  info?: React.ErrorInfo;
+};
 
 export default class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  state: State = { hasError: false };
 
-  static getDerivedStateFromError(error: unknown) {
+  static getDerivedStateFromError(err: unknown): State {
+    // Always convert unknown to Error to keep render() types safe
+    const error = err instanceof Error ? err : new Error(String(err));
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
-    // Log error to console or send to monitoring service
-    console.error("Uncaught error:", error, errorInfo);
-    logError(error, errorInfo);
-    const sentry = (window as any).Sentry;
-    if (sentry && typeof sentry.captureException === "function") {
-      sentry.captureException(error, { extra: errorInfo });
-    }
+  componentDidCatch(error: unknown, info: React.ErrorInfo) {
+    // Log with best-effort typing; don’t throw from here
+    // eslint-disable-next-line no-console
+    console.error("ErrorBoundary caught:", error, info);
+    this.setState({ info });
   }
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
-      const message = this.state.error instanceof Error ? this.state.error.message : String(this.state.error);
+      if (this.props.fallback) return this.props.fallback;
+
+      const msg =
+        this.state.error?.message ?? "An unexpected error occurred.";
+
       return (
         <div
           role="alert"
+          aria-live="assertive"
           style={{
-            background: "#1e1e1e",
+            position: "fixed",
+            inset: "16px",
+            zIndex: 99999,
+            padding: "12px",
+            borderRadius: "8px",
+            background: "rgba(0,0,0,0.85)",
             color: "#fff",
-            padding: "1rem",
-            textAlign: "center",
+            font:
+              "14px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif",
           }}
         >
-          <p>
-            <strong>Something went wrong.</strong>
-          </p>
-          {this.state.error && <p>{message}</p>}
-          <p>Try refreshing the page or contact support if the problem persists.</p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{ marginTop: "1rem" }}
-          >
-            Reload
-          </button>
+          {msg}
         </div>
       );
     }
@@ -55,3 +62,4 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     return this.props.children;
   }
 }
+
