@@ -26,7 +26,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!r.ok) return res.status(r.status).json({ ok: false, error: data?.error?.message || "Failed" });
     const text = data?.choices?.[0]?.message?.content ?? "";
     return res.status(200).json({ ok: true, text });
-  } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || "Network error" });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : "Network error";
+    return res.status(500).json({ ok: false, error: errorMessage });
   }
 }
