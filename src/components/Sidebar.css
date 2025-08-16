@@ -96,6 +96,7 @@
 
 .sb-nav { margin-bottom: 12px; }
 .sb-nav ul { list-style: none; display: flex; gap: 8px; padding: 0; }
+.sb-nav a,
 .sb-nav button {
   display: flex;
   align-items: center;
@@ -105,12 +106,23 @@
   background: none;
   border: none;
   color: inherit;
+  text-decoration: none;
   cursor: pointer;
 }
-.sb-nav button.active { background: rgba(255,255,255,.1); }
+.sb-nav a:hover,
+.sb-nav a.active,
+.sb-nav button:hover,
+.sb-nav button.active {
+  background: rgba(255,255,255,.1);
+}
+.sb-nav a:focus-visible,
 .sb-nav button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.sb-nav-premium ul {
+  flex-direction: column;
 }
 
 .card { /* ...unchanged card styles... */ }

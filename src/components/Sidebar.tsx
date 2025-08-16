@@ -88,6 +88,10 @@ export default function Sidebar() {
 
   const pages = [
     { label: "Home", path: "/", icon: "🏠" },
+    { label: "Feed", path: "/feed", icon: "📰" },
+    { label: "Chat", path: "/chat", icon: "💬" },
+    { label: "Messages", path: "/messages", icon: "✉️" },
+    { label: "Voting", path: "/voting", icon: "🗳️" },
     { label: "Profile", path: "/profile", icon: "👤" },
     { label: "Settings", path: "/settings", icon: "⚙️" },
   ];
@@ -168,6 +172,36 @@ export default function Sidebar() {
                     </NavLink>
                   </li>
                 ))}
+              </ul>
+            </nav>
+          </section>
+
+          <section className="card">
+            <header>Premium features</header>
+            <nav className="sb-nav sb-nav-premium" aria-label="Premium features">
+              <ul>
+                <li>
+                  <NavLink
+                    to="/music"
+                    className={({ isActive }) => (isActive ? "active" : "")}
+                    onClick={() => setOpen(false)}
+                    aria-label="Music"
+                  >
+                    <span aria-hidden>🎵</span>
+                    <span>Music</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/agents"
+                    className={({ isActive }) => (isActive ? "active" : "")}
+                    onClick={() => setOpen(false)}
+                    aria-label="Agents"
+                  >
+                    <span aria-hidden>🤖</span>
+                    <span>Agents</span>
+                  </NavLink>
+                </li>
               </ul>
             </nav>
           </section>
