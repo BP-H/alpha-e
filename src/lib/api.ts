@@ -14,19 +14,33 @@ export async function assistantReply(prompt: string): Promise<{ ok: boolean; tex
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ apiKey, prompt }), // <— 'prompt' shape
     });
-    const j = await r.json().catch(() => ({}));
+    let j: any;
+    try {
+      j = await r.json();
+    } catch (e: unknown) {
+      console.error("Failed to parse /api/assistant-reply response", e);
+      return { ok: false, error: "Invalid JSON response" };
+    }
     return j?.ok ? { ok: true, text: j.text || "" } : { ok: false, error: j?.error || "Failed" };
-  } catch (e: any) {
-    return { ok: false, error: e?.message || "Network error" };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Network error";
+    return { ok: false, error: message };
   }
 }
 
 export async function fetchPlayers(): Promise<{ id: string; name: string; color: string }[]> {
   try {
     const r = await fetch("/api/players");
-    const j = await r.json().catch(() => ({}));
+    let j: any;
+    try {
+      j = await r.json();
+    } catch (e: unknown) {
+      console.error("Failed to parse /api/players response", e);
+      return [];
+    }
     return j?.ok ? (j.players || []) : [];
-  } catch {
+  } catch (e: unknown) {
+    console.error("Failed to fetch players", e);
     return [];
   }
 }
