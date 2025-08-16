@@ -1,8 +1,9 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./PostComposer.css";
 import { useFeedStore } from "../lib/feedStore";
 import { isSuperUser } from "../lib/superUser";
 import type { Post } from "../types";
+import { ensureModelViewer } from "../lib/ensureModelViewer";
 
 export default function PostComposer() {
   const addPost = useFeedStore((s) => s.addPost);
@@ -56,6 +57,11 @@ export default function PostComposer() {
       setModel3d(URL.createObjectURL(f));
     }
   }, []);
+
+  // Load the model-viewer element only when a 3D model is attached.
+  useEffect(() => {
+    if (model3d) ensureModelViewer().catch(() => {});
+  }, [model3d]);
 
   const onPaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
