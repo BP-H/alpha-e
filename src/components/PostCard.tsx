@@ -4,7 +4,7 @@ import "./postcard.css";
 import type { Post } from "../types";
 import bus from "../lib/bus";
 import { ensureModelViewer } from "../lib/ensureModelViewer";
-import AmbientWorld from "./AmbientWorld";
+import ThirteenthFloorWorld from "../three/ThirteenthFloorWorld";
 
 const isBlob = (u?: string | null) => !!u && u.startsWith("blob:");
 
@@ -151,7 +151,7 @@ export default function PostCard({ post }: { post: Post }) {
               onLoad={onMediaReady}
             />
           ) : (
-            <AmbientWorld className="pc-media" />
+            <ThirteenthFloorWorld className="pc-media" style={{ height: "56vw" }} />
           )}
         </div>
 
