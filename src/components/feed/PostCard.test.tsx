@@ -2,7 +2,7 @@
 import React from "react";
 import { render, fireEvent } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import PostCard from "./PostCard";
+import PostCard from "../PostCard";
 import type { Post } from "../../types";
 
 describe("PostCard image grid", () => {
