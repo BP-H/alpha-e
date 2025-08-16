@@ -1,5 +1,6 @@
 // src/lib/useSpeech.ts
 import { useCallback, useEffect, useRef } from "react";
+import { logError } from "./logger";
 
 type ResultHandler = (text: string) => void | Promise<void>;
 
@@ -12,7 +13,13 @@ export default function useSpeechRecognition(onResult: ResultHandler) {
   useEffect(() => {
     if (!supported) return;
     const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const rec = new Ctor();
+    let rec: any;
+    try {
+      rec = new Ctor();
+    } catch (err) {
+      logError(err);
+      return;
+    }
     rec.lang = "en-US";
     rec.interimResults = false;
     rec.maxAlternatives = 1;
@@ -20,26 +27,27 @@ export default function useSpeechRecognition(onResult: ResultHandler) {
       try {
         const txt = e.results && e.results[0] && e.results[0][0] && e.results[0][0].transcript;
         if (txt) await onResult(txt);
-      } catch {
-        // ignore handler errors
+      } catch (err) {
+        // ignore handler errors but log
+        logError(err);
       } finally {
-        try { rec.stop(); } catch {}
+        try { rec.stop(); } catch (err) { logError(err); }
       }
     };
     rec.onerror = () => {};
     recRef.current = rec;
     return () => {
-      try { rec.stop(); } catch {}
+      try { rec.stop(); } catch (err) { logError(err); }
       recRef.current = null;
     };
   }, [onResult, supported]);
 
   const start = useCallback(() => {
-    try { recRef.current && recRef.current.start(); } catch {}
+    try { recRef.current && recRef.current.start(); } catch (err) { logError(err); }
   }, []);
 
   const stop = useCallback(() => {
-    try { recRef.current && recRef.current.stop(); } catch {}
+    try { recRef.current && recRef.current.stop(); } catch (err) { logError(err); }
   }, []);
 
   return { start, stop, supported: !!supported };
