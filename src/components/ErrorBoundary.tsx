@@ -23,12 +23,17 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div role="alert">
-          <p>Something went wrong. Please try reloading.</p>
-          <p>
-            <button onClick={() => window.location.reload()}>Reload</button> or
-            <a href="mailto:support@example.com"> report this issue</a>.
-          </p>
+        <div
+          role="alert"
+          style={{
+            background: "#1e1e1e",
+            color: "#fff",
+            padding: "1rem",
+            textAlign: "center",
+          }}
+        >
+          <p><strong>Something went wrong.</strong></p>
+          <p>Try refreshing the page or contact support if the problem persists.</p>
         </div>
       );
     }
