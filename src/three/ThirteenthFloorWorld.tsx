@@ -84,8 +84,15 @@ function Portal() {
 }
 
 function makeLabelTexture(name: string, color = "#2eff7a") {
+  if (typeof document === "undefined") {
+    // During SSR, return an empty texture to avoid crashes
+    return new THREE.Texture();
+  }
   const canvas = document.createElement("canvas");
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr =
+    typeof window !== "undefined"
+      ? Math.min(2, window.devicePixelRatio || 1)
+      : 1;
   canvas.width = 256 * dpr;
   canvas.height = 128 * dpr;
   const g = canvas.getContext("2d");
