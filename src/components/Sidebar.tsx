@@ -73,6 +73,10 @@ export default function Sidebar() {
   const [perplexityKey, setPerplexityKey] = useLocal("sn.keys.perplexity", "");
   const [stabilityKey, setStabilityKey] = useLocal("sn.keys.stability", "");
   const [elevenlabsKey, setElevenlabsKey] = useLocal("sn.keys.elevenlabs", "");
+  const [openaiModel, setOpenaiModel] = useLocal(
+    "sn.model.openai",
+    "gpt-4o-mini",
+  );
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const toggleShow = (k: string) =>
     setShowKeys((s) => ({ ...s, [k]: !s[k] }));
@@ -313,6 +317,21 @@ export default function Sidebar() {
             <button className="key-clear" onClick={clearAll} type="button">
               Clear all keys
             </button>
+          </section>
+
+          <section className="card">
+            <header>AI Model</header>
+            <div className="key-field">
+              <label className="label" htmlFor="model-openai">
+                OpenAI model
+              </label>
+              <input
+                id="model-openai"
+                className="input"
+                value={openaiModel}
+                onChange={(e) => setOpenaiModel(e.target.value)}
+              />
+            </div>
           </section>
 
           {/* Integrations, Privacy, Danger Zone sections ... */}

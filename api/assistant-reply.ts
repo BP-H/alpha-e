@@ -1,39 +1,52 @@
 // /api/assistant-reply.ts
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse,
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  // Prefer the server env var; fall back to client-supplied key for local/dev.
   const body = (req.body ?? {}) as {
     apiKey?: string;
     prompt?: string;
     q?: string;
+    model?: string;
     ctx?: { post?: { id?: string | number; text?: string } };
   };
-  const apiKey = process.env.OPENAI_API_KEY || body.apiKey || "";
-  if (!apiKey)
-    return res
-      .status(401)
-      .json({ ok: false, error: "Unauthorized: missing OpenAI API key" });
+
+  // In production, only the server env is used. In local/dev, allow body.apiKey as a fallback.
+  const isProd = !!process.env.VERCEL || process.env.NODE_ENV === "production";
+  const apiKey = isProd
+    ? (process.env.OPENAI_API_KEY || "")
+    : (process.env.OPENAI_API_KEY || body.apiKey || "");
+
+  if (!apiKey) {
+    return res.status(401).json({
+      ok: false,
+      error:
+        "Unauthorized: missing OPENAI_API_KEY on the server. Set it in Vercel → Settings → Environment Variables.",
+    });
+  }
 
   // Accept either {prompt} or {q}
   const raw =
     typeof body.prompt === "string"
       ? body.prompt
       : typeof body.q === "string"
-        ? body.q
-        : "";
-  const prompt = (raw || "").trim();
-  if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
+      ? body.q
+      : "";
+  const prompt = (raw || "").trim().slice(0, 2000);
+  if (!prompt) {
+    return res.status(400).json({ ok: false, error: "Missing prompt" });
+  }
+
+  const model =
+    typeof body.model === "string" && body.model.trim()
+      ? body.model.trim()
+      : "gpt-4o-mini";
 
   const ctx = body.ctx || {};
-  const messages: { role: string; content: string }[] = [
+  const messages: { role: "system" | "user"; content: string }[] = [
     {
       role: "system",
       content:
@@ -43,28 +56,32 @@ export default async function handler(
   if (ctx.post?.text) {
     const pid = ctx.post.id ?? "";
     const ptxt = String(ctx.post.text).slice(0, 2000);
-    messages.push({
-      role: "system",
-      content: `Context post ${pid}: ${ptxt}`,
-    });
+    messages.push({ role: "system", content: `Context post ${pid}: ${ptxt}` });
   }
-  messages.push({ role: "user", content: prompt.slice(0, 2000) });
+  messages.push({ role: "user", content: prompt });
 
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10_000);
+
     const r = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.3,
-        messages,
-      }),
+      body: JSON.stringify({ model, temperature: 0.3, messages }),
+      signal: ctrl.signal,
     });
+    clearTimeout(timer);
+
     const j = await r.json();
-    if (!r.ok) return res.status(r.status).json({ ok: false, error: j?.error?.message || "Failed" });
+    if (!r.ok) {
+      return res
+        .status(r.status)
+        .json({ ok: false, error: j?.error?.message || "Failed" });
+    }
+
     const text = (j?.choices?.[0]?.message?.content || "").trim();
     return res.status(200).json({ ok: true, text });
   } catch (e: unknown) {
