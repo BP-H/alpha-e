@@ -32,6 +32,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
   --orb-ring: color-mix(in srgb, var(--orb-color) 25%, transparent 75%);
   --orb-ring-strong: color-mix(in srgb, var(--orb-color) 35%, transparent 65%);
   --orb-ping: color-mix(in srgb, var(--orb-color) 30%, transparent 70%);
+  --pc-nav-size: 2rem;
+  --pc-dot-btn-size: 0.5rem;
 }
 
 :root[data-theme="light"] {
@@ -146,12 +148,12 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* Carousel controls used by PostCard */
 .pc-nav{
   position:absolute; top:50%; transform:translateY(-50%);
-  width:32px; height:32px; display:flex; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.45); color:#fff; border:0; border-radius:999px; cursor:pointer; z-index:3;
+  width:var(--pc-nav-size); height:var(--pc-nav-size); display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.45); color:#fff; border:0; border-radius:999px; cursor:pointer; z-index:3; max-width:100%; box-sizing:border-box;
 }
 .pc-nav.prev{ left:10px; } .pc-nav.next{ right:10px; }
-.pc-dots{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:3; }
-.pc-dots button{ width:8px; height:8px; border-radius:50%; border:0; padding:0; background:rgba(255,255,255,.5); cursor:pointer; }
+.pc-dots{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:3; max-width:100%; box-sizing:border-box; }
+.pc-dots button{ width:var(--pc-dot-btn-size); height:var(--pc-dot-btn-size); border-radius:50%; border:0; padding:0; background:rgba(255,255,255,.5); cursor:pointer; max-width:100%; box-sizing:border-box; }
 .pc-dots button.on{ background:#fff; }
 
 /* =========================
