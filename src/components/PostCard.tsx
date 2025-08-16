@@ -4,6 +4,7 @@ import "./postcard.css";
 import type { Post } from "../types";
 import bus from "../lib/bus";
 import { ensureModelViewer } from "../lib/ensureModelViewer";
+import AmbientWorld from "./AmbientWorld";
 
 const isBlob = (u?: string | null) => !!u && u.startsWith("blob:");
 
@@ -54,7 +55,6 @@ export default function PostCard({ post }: { post: Post }) {
       if (typeof img === "string") out.push(img);
       else if (img.url) out.push(String(img.url));
     }
-    if (!out.length && !video && !pdf && !model3d) out.push("/vite.svg");
     return out;
   }, [post, video, pdf, model3d]);
 
@@ -141,7 +141,7 @@ export default function PostCard({ post }: { post: Post }) {
                 );
               })}
             </div>
-          ) : (
+          ) : images.length ? (
             <img
               className="pc-media"
               src={images[0]}
@@ -150,6 +150,8 @@ export default function PostCard({ post }: { post: Post }) {
               crossOrigin={isBlob(images[0]) ? undefined : "anonymous"}
               onLoad={onMediaReady}
             />
+          ) : (
+            <AmbientWorld className="pc-media" />
           )}
         </div>
 
