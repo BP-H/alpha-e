@@ -3,11 +3,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',                           // keep SPA at root
-  resolve: {
-    // 🔧 critical: force ONE copy of 'three' in the bundle
-    dedupe: ['three'],
-  },
+  base: '/',
+  resolve: { dedupe: ['three'] },      // 👈 keep exactly one three
   build: {
     outDir: 'dist',
     rollupOptions: {

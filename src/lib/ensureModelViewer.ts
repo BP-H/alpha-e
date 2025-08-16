@@ -1,24 +1,14 @@
-// src/lib/ensureModelViewer.ts
-let loading: Promise<void> | null = null;
+export async function ensureModelViewer() {
+  // already registered?
+  if (typeof window !== 'undefined' && customElements.get('model-viewer')) return;
 
-export function ensureModelViewer(): Promise<void> {
-  // No-op on SSR / during prerender
-  if (typeof window === "undefined") return Promise.resolve();
-  // Already defined?
-  if (customElements.get("model-viewer")) return Promise.resolve();
-  // In-flight load?
-  if (loading) return loading;
-
-  // Lazy-load the element from the npm package so we reuse the app's Three build.
-  loading = (async () => {
-    try {
-      await import("@google/model-viewer");
-    } catch (error) {
-      loading = null; // allow retry on next call
-      console.error(error);
-      throw error;
-    }
-  })();
-
-  return loading;
+  await new Promise<void>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.type = 'module';
+    // decoupled from our bundle, no peer-dep conflicts
+    s.src = 'https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Failed to load @google/model-viewer'));
+    document.head.appendChild(s);
+  });
 }
