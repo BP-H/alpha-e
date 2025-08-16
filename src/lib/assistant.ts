@@ -49,6 +49,22 @@ export async function askLLM(
         postId: ctx?.postId ?? null,
       };
     }
+
+    // Handle non-OK responses so the caller knows the request failed
+    try {
+      const err: any = await res.json().catch(() => null);
+      const msg = err?.error || "request failed";
+      console.error("assistant request failed:", msg);
+      if (typeof window !== "undefined") {
+        try {
+          window.alert?.(`Assistant request failed: ${msg}`);
+        } catch {
+          // ignore alert errors
+        }
+      }
+    } catch {
+      console.error("assistant request failed: unknown error");
+    }
   } catch {
     // fall through to stub
   }
