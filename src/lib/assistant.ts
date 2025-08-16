@@ -3,10 +3,16 @@ import type { AssistantMessage, RemixSpec } from "../types";
 
 export async function askLLM(input: string, ctx?: Record<string, unknown>): Promise<AssistantMessage> {
   try {
+    let model: string | undefined;
+    try {
+      const raw = localStorage.getItem("sn.model.openai");
+      if (raw) model = JSON.parse(raw);
+    } catch {}
+
     const res = await fetch("/api/assistant-reply", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: input, ctx }),
+      body: JSON.stringify({ prompt: input, ctx, model }),
     });
     if (res.ok) {
       const data = await res.json();

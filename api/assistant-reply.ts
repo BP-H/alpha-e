@@ -14,6 +14,7 @@ export default async function handler(
     apiKey?: string;
     prompt?: string;
     q?: string;
+    model?: string;
   };
   const apiKey = process.env.OPENAI_API_KEY || body.apiKey || "";
   if (!apiKey)
@@ -31,12 +32,16 @@ export default async function handler(
   const prompt = (raw || "").trim();
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
+  const model = typeof body.model === "string" && body.model.trim()
+    ? body.model.trim()
+    : "gpt-4o-mini";
+
   try {
     const r = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model,
         temperature: 0.3,
         messages: [
           { role: "system", content: "You are the SuperNOVA assistant orb. Reply in one or two concise sentences. No markdown." },
