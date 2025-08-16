@@ -216,6 +216,7 @@ export default function AssistantOrb() {
 
   // commands
   const push = (m: AssistantMessage) => setMsgs(s => [...s, m]);
+
   async function handleCommand(text: string) {
     const post = ctxPost || null;
     push({ id: uuid(), role: "user", text, ts: Date.now(), postId: post?.id ?? null });
@@ -263,7 +264,7 @@ export default function AssistantOrb() {
       T,
       post
         ? {
-            postId: post.id as string | number,
+            postId: post.id as unknown as string | number,
             title: (post as any)?.title,
             text: ctxPostText || getPostText(post),
           }
@@ -272,35 +273,26 @@ export default function AssistantOrb() {
     push(resp);
   }
 
+  // ✅ missing function (caused your build error)
   function handleEmojiClick(emoji: string) {
-    const post = ctxPost;
-    if (post) {
-      bus.emit?.("post:react", { id: post.id, emoji });
-      push({
-        id: uuid(),
-        role: "assistant",
-        text: `✨ Reacted ${emoji} on ${post.id}`,
-        ts: Date.now(),
-        postId: post.id,
-      });
-    } else {
-      push({
-        id: uuid(),
-        role: "assistant",
-        text: "⚠️ Drag the orb over a post first.",
-        ts: Date.now(),
-      });
-    }
+    if (!ctxPost) { setToast("Hover a post first"); return; }
+    bus.emit?.("post:react", { id: ctxPost.id, emoji });
+    setToast(`Reacted ${emoji}`);
+    window.setTimeout(() => setToast(""), 900);
   }
 
   // hover highlight
   function setHover(id: string | null) {
     if (hoverIdRef.current) {
-      document.querySelector(`[data-post-id="${hoverIdRef.current}"]`)?.classList.remove("pc-target");
+      document
+        .querySelector(`[data-post-id="${hoverIdRef.current}"]`)
+        ?.classList.remove("pc-target");
       hoverIdRef.current = null;
     }
     if (id) {
-      document.querySelector(`[data-post-id="${id}"]`)?.classList.add("pc-target");
+      document
+        .querySelector(`[data-post-id="${id}"]`)
+        ?.classList.add("pc-target");
       hoverIdRef.current = id;
     }
   }
@@ -697,10 +689,10 @@ export default function AssistantOrb() {
               setMenuOpen(false);
             }}
             onProfile={() => {
-              if (ctxPost) bus.emit?.("profile:open", { id: ctxPost.author });
+              if (ctxPost) bus.emit?.("profile:open", { id: (ctxPost as any).author });
               setMenuOpen(false);
             }}
-            avatarUrl={ctxPost?.authorAvatar || "/avatar.jpg"}
+            avatarUrl={(ctxPost as any)?.authorAvatar || "/avatar.jpg"}
             emojis={EMOJI_LIST.slice(0, 8)}
           />
         </>
