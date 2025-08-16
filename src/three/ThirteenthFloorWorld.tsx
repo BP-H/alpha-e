@@ -9,6 +9,7 @@ import * as THREE from "three";
 import React, { useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
+import { logError } from "../lib/logger";
 
 type Person = { id: string; name?: string; color?: string };
 
@@ -87,7 +88,11 @@ function makeLabelTexture(name: string, color = "#2eff7a") {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = 256 * dpr;
   canvas.height = 128 * dpr;
-  const g = canvas.getContext("2d")!;
+  const g = canvas.getContext("2d");
+  if (!g) {
+    logError(new Error("2D context not available"));
+    return new THREE.CanvasTexture(canvas);
+  }
   g.scale(dpr, dpr);
 
   g.fillStyle = "rgba(10, 20, 10, 0.1)";
