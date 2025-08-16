@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import PostCard from "./PostCard";
 import bus from "../../lib/bus";
-import type { Post } from "../../types";
 import { useFeedStore } from "../../lib/feedStore";
 import "./Feed.css";
 
@@ -16,19 +15,10 @@ interface FeedProps {
 
 export default function Feed({ children, style }: FeedProps) {
   const posts = useFeedStore((s) => s.posts);
-  const setPosts = useFeedStore((s) => s.setPosts);
   const [limit, setLimit] = useState(PAGE);
   const limitRef = useRef(limit);
   const visible = useMemo(() => posts.slice(0, limit), [posts, limit]);
   const ref = useRef<HTMLDivElement | null>(null);
-
-  // hydrate posts from global injection if available
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const injected = (window as any).__SN_POSTS__ as Post[] | undefined;
-      if (Array.isArray(injected) && injected.length) setPosts(injected);
-    }
-  }, [setPosts]);
 
   useEffect(() => {
     limitRef.current = limit;
