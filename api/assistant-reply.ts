@@ -16,7 +16,10 @@ export default async function handler(
     q?: string;
   };
   const apiKey = process.env.OPENAI_API_KEY || body.apiKey || "";
-  if (!apiKey) return res.status(500).json({ ok: false, error: "Missing OPENAI_API_KEY" });
+  if (!apiKey)
+    return res
+      .status(401)
+      .json({ ok: false, error: "Unauthorized: missing OpenAI API key" });
 
   // Accept either {prompt} or {q}
   const raw =
@@ -45,7 +48,8 @@ export default async function handler(
     if (!r.ok) return res.status(r.status).json({ ok: false, error: j?.error?.message || "Failed" });
     const text = (j?.choices?.[0]?.message?.content || "").trim();
     return res.status(200).json({ ok: true, text });
-  } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || "Network error" });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Network error";
+    return res.status(500).json({ ok: false, error: message });
   }
 }
