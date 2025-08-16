@@ -9,6 +9,14 @@ export function ensureModelViewer(): Promise<void> {
   // Lazy-load the model-viewer element from the npm package. This avoids
   // injecting scripts at runtime and ensures a single Three.js instance is
   // used across the app.
-  loading = import("@google/model-viewer").then(() => {});
+  loading = (async () => {
+    try {
+      await import("@google/model-viewer");
+    } catch (error) {
+      loading = null;
+      console.error(error);
+      throw error;
+    }
+  })();
   return loading;
 }
