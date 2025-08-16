@@ -12,6 +12,16 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx" id="main-module"></script>
+    <script>
+      const mainModule = document.getElementById('main-module');
+      mainModule?.addEventListener('error', () => {
+        const root = document.getElementById('root');
+        if (root) {
+          root.innerHTML =
+            '<p style="color:red">Failed to load the application. Please try again later.</p>';
+        }
+      });
+    </script>
   </body>
 </html>
