@@ -22,18 +22,12 @@ export default function Shell() {
       <Sidebar />
       <PortalOverlay />
 
-      {/* IMPORTANT: use the same classes the feed CSS targets */}
-      <main
-        className="content-viewport feed-wrap"
-        // topbar pushes the scroller down (Topbar sets --topbar-h)
-        style={{ paddingTop: "var(--topbar-h, 56px)" }}
-      >
-        {/* keep the composer inside the feed grid width */}
-        <div className="feed-content" style={{ padding: "12px 0" }}>
-          <PostComposer />
-        </div>
-
-        <Feed />
+      <main>
+        <Feed style={{ paddingTop: "var(--topbar-h, 56px)" }}>
+          <div style={{ padding: "12px 0" }}>
+            <PostComposer />
+          </div>
+        </Feed>
       </main>
 
       <ChatDock />
