@@ -14,13 +14,15 @@ export default function ThreeCard({ variant = 'knot' as 'knot' | 'cube' | 'ico' 
         background: '#0a0b10',
       }}
     >
-      <Canvas camera={{ position: [0, 0, 3.2], fov: 50 }} dpr={[1, 1.5]} gl={{ antialias: false }}>
-        <color attach="background" args={['#0a0b10']} />
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[2, 3, 2]} intensity={0.8} />
-        <Spinner variant={variant} />
-        <ContactShadows position={[0, -1, 0]} opacity={0.25} scale={10} blur={1.6} far={2} />
-      </Canvas>
+      <div className="r3f-root">
+        <Canvas camera={{ position: [0, 0, 3.2], fov: 50 }} dpr={[1, 1.5]} gl={{ antialias: false }}>
+          <color attach="background" args={['#0a0b10']} />
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[2, 3, 2]} intensity={0.8} />
+          <Spinner variant={variant} />
+          <ContactShadows position={[0, -1, 0]} opacity={0.25} scale={10} blur={1.6} far={2} />
+        </Canvas>
+      </div>
     </div>
   );
 }

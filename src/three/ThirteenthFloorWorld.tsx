@@ -218,11 +218,13 @@ export default function ThirteenthFloorWorld({
   people?: Person[];
 }) {
   return (
-    <Canvas
-      camera={{ fov: 55, near: 0.1, far: 2000, position: [-90, 58, 130] }}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
-    >
-      <Scene people={people} />
-    </Canvas>
+    <div className="r3f-root">
+      <Canvas
+        camera={{ fov: 55, near: 0.1, far: 2000, position: [-90, 58, 130] }}
+        gl={{ antialias: true, powerPreference: "high-performance" }}
+      >
+        <Scene people={people} />
+      </Canvas>
+    </div>
   );
 }
