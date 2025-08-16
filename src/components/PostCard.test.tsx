@@ -11,7 +11,7 @@ vi.mock("../lib/ensureModelViewer", () => ({
   ensureModelViewer: () => Promise.resolve()
 }));
 
-vi.mock("./AmbientWorld", () => ({
+vi.mock("../three/ThirteenthFloorWorld", () => ({
   default: () => <div />
 }));
 

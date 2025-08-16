@@ -3,7 +3,7 @@ import "./postcard.css";
 import type { Post } from "../../types";
 import bus from "../../lib/bus";
 import { ensureModelViewer } from "../../lib/ensureModelViewer";
-import AmbientWorld from "../AmbientWorld";
+import ThirteenthFloorWorld from "../../three/ThirteenthFloorWorld";
 
 const OR = (a: any, b: any) => (a ?? b);
 
@@ -197,7 +197,7 @@ export default function PostCard({ post }: { post: Post }) {
               style={{ opacity: 0 }}
             />
           ) : (
-            <AmbientWorld />
+            <ThirteenthFloorWorld style={{ height: "56vw" }} />
           )}
         </div>
 

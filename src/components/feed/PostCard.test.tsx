@@ -4,6 +4,11 @@ import { render, fireEvent } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import PostCard from "./PostCard";
 import type { Post } from "../../types";
+import { vi } from "vitest";
+
+vi.mock("../../three/ThirteenthFloorWorld", () => ({
+  default: () => <div />,
+}));
 
 describe("PostCard image grid", () => {
   const post: Post = {

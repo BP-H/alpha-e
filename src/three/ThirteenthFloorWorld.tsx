@@ -214,11 +214,18 @@ export default function ThirteenthFloorWorld({
     { id: "uno", name: "uno", color: "#9effb8" },
     { id: "jin", name: "jin", color: "#86ffaa" },
   ],
+  className,
+  style,
 }: {
   people?: Person[];
+  className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <div className="r3f-root">
+    <div
+      className={["r3f-root", className].filter(Boolean).join(" ")}
+      style={style}
+    >
       <Canvas
         camera={{ fov: 55, near: 0.1, far: 2000, position: [-90, 58, 130] }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
