@@ -14,17 +14,43 @@ import { motion, useReducedMotion } from "framer-motion";
  * - Petal drawers for React/Comment/Remix; Chat panel on side
  */
 
+interface SpeechRecognitionResult {
+  [index: number]: { transcript: string };
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
+
 type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
   onstart?: () => void;
   onend?: () => void;
-  onerror?: (e?: any) => void;
-  onresult?: (e?: any) => void;
+  onerror?: (e: SpeechRecognitionErrorEvent) => void;
+  onresult?: (e: SpeechRecognitionEvent) => void;
   start?: () => void;
   stop?: () => void;
 };
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+interface WindowWithSpeechRecognition extends Window {
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  SpeechRecognition?: SpeechRecognitionConstructor;
+}
 
 const ORB_SIZE = 76;
 const ORB_MARGIN = 12;
@@ -35,7 +61,7 @@ const STORAGE_KEY = "assistantOrbPos.v6";
 const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n));
 const uuid = () => {
   try {
-    return (globalThis as any)?.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+    return globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
   } catch {
     return Math.random().toString(36).slice(2);
   }
@@ -121,16 +147,18 @@ export default function AssistantOrb() {
   const restartRef = useRef(false);
   function ensureRec(): SpeechRecognitionLike | null {
     if (recRef.current) return recRef.current;
-    const C =
+    const C: SpeechRecognitionConstructor | null =
       (typeof window !== "undefined" &&
-        ((window as any).webkitSpeechRecognition || (window as any).SpeechRecognition)) || null;
+        ((window as WindowWithSpeechRecognition).webkitSpeechRecognition ||
+          (window as WindowWithSpeechRecognition).SpeechRecognition)) ||
+      null;
     if (!C) { setToast("Voice not supported"); return null; }
-    const rec: SpeechRecognitionLike = new (C as any)();
+    const rec: SpeechRecognitionLike = new C();
     rec.continuous = true; rec.interimResults = true; rec.lang = "en-US";
     rec.onstart = () => { setMic(true); setToast("Listening…"); };
     rec.onend   = () => { setMic(false); setToast(""); if (restartRef.current) { try { rec.start?.(); } catch {} } };
-    rec.onerror = () => { setMic(false); setToast("Mic error"); };
-    rec.onresult = (e: any) => {
+    rec.onerror = (_e: SpeechRecognitionErrorEvent) => { setMic(false); setToast("Mic error"); };
+    rec.onresult = (e: SpeechRecognitionEvent) => {
       let temp = ""; const finals: string[] = [];
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i]; const t = r[0]?.transcript || "";
@@ -160,7 +188,7 @@ export default function AssistantOrb() {
   const push = (m: AssistantMessage) => setMsgs(s => [...s, m]);
   async function handleCommand(text: string) {
     const post = ctxPost || null;
-    push({ id: uuid(), role: "user", text, ts: Date.now(), postId: (post?.id as any) });
+    push({ id: uuid(), role: "user", text, ts: Date.now(), postId: post?.id ?? null });
 
     const T = text.trim();
     const lower = T.toLowerCase();
@@ -169,7 +197,7 @@ export default function AssistantOrb() {
       const emoji = T.replace("/react", "").trim() || "❤️";
       if (post) {
         bus.emit?.("post:react", { id: post.id, emoji });
-        push({ id: uuid(), role: "assistant", text: `✨ Reacted ${emoji} on ${post.id}`, ts: Date.now(), postId: (post.id as any) });
+        push({ id: uuid(), role: "assistant", text: `✨ Reacted ${emoji} on ${post.id}`, ts: Date.now(), postId: post.id });
       } else {
         push({ id: uuid(), role: "assistant", text: "⚠️ Drag the orb over a post first.", ts: Date.now() });
       }
@@ -179,7 +207,7 @@ export default function AssistantOrb() {
       const body = T.slice(9).trim();
       if (post) {
         bus.emit?.("post:comment", { id: post.id, body });
-        push({ id: uuid(), role: "assistant", text: `💬 Commented: ${body}`, ts: Date.now(), postId: (post.id as any) });
+        push({ id: uuid(), role: "assistant", text: `💬 Commented: ${body}`, ts: Date.now(), postId: post.id });
       } else {
         push({ id: uuid(), role: "assistant", text: "⚠️ Drag onto a post to comment.", ts: Date.now() });
       }
@@ -187,13 +215,13 @@ export default function AssistantOrb() {
     }
     if (lower.startsWith("/world")) {
       bus.emit?.("orb:portal", { x: posRef.current.x, y: posRef.current.y });
-      push({ id: uuid(), role: "assistant", text: "🌀 Entering world…", ts: Date.now(), postId: (post?.id as any) });
+      push({ id: uuid(), role: "assistant", text: "🌀 Entering world…", ts: Date.now(), postId: post?.id ?? null });
       return;
     }
     if (lower.startsWith("/remix")) {
       if (post) {
         bus.emit?.("post:remix", { id: post.id });
-        push({ id: uuid(), role: "assistant", text: `🎬 Remixing ${post.id}`, ts: Date.now(), postId: (post.id as any) });
+        push({ id: uuid(), role: "assistant", text: `🎬 Remixing ${post.id}`, ts: Date.now(), postId: post.id });
       } else {
         push({ id: uuid(), role: "assistant", text: "⚠️ Drag onto a post to remix.", ts: Date.now() });
       }
