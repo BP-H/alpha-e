@@ -44,10 +44,6 @@
 }
 .pc-ava.small{ width:28px; height:28px; }
 .pc-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
-.pc-ava-emo{
-  position:absolute; transform: translate(18px, 18px);
-  font-size:13px; pointer-events:none;
-}
 .pc-meta{ display:flex; flex-direction:column; min-width:0; line-height:1.1; }
 .pc-handle{ font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pc-sub{ font-size:12px; color:var(--pc-muted); }
@@ -105,13 +101,13 @@
 
 /* “pop-out” single-row emoji strip, extending from the glass */
 .pc-react-strip{
-  position:absolute; left:10px; right:10px; bottom:-58px;
   display:flex; align-items:center; gap:8px; overflow-x:auto;
   padding:6px 8px; border-radius:999px;
   background: var(--pc-glass); border:1px solid var(--pc-stroke);
   color: var(--pc-ink);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
+  margin-left:8px;
 }
 .pc-react-strip::-webkit-scrollbar{ display:none; }
 .pc-emo{
@@ -119,14 +115,9 @@
   background:transparent; border:0; cursor:pointer;
   padding:6px 8px;
 }
-.pc-react-close{
-  margin-left:auto; width:28px; height:28px; border-radius:999px;
-  border:1px solid var(--pc-stroke);
-  background: rgba(255,255,255,.06); color: var(--pc-ink);
-}
 
 .pc-comment-box{
-  position:absolute; left:10px; right:10px; bottom:-150px;
+  margin-top:8px;
   display:flex; flex-direction:column; gap:8px;
   padding:8px 10px;
   border-radius: var(--pc-radius);
@@ -143,10 +134,44 @@
 .pc-comment-close{ align-self:flex-end; width:28px; height:28px; border-radius:999px; border:1px solid var(--pc-stroke); background: rgba(255,255,255,.06); color: var(--pc-ink); }
 .pc-empty{ opacity:.7; }
 
+.pc-remix-box{
+  margin-top:8px;
+  display:flex; flex-direction:column; gap:8px;
+  padding:8px 10px;
+  border-radius: var(--pc-radius);
+  background: var(--pc-glass); border:1px solid var(--pc-stroke);
+  color: var(--pc-ink);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+.pc-count{
+  margin-left:4px;
+  font-size:12px;
+  background: rgba(255,255,255,.06);
+  border:1px solid var(--pc-stroke);
+  padding:2px 6px;
+  border-radius:999px;
+}
+
+.pc-reactions{
+  margin-top:8px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  color: var(--pc-ink);
+}
+.pc-emo-count{
+  font-size:14px;
+  background: rgba(255,255,255,.06);
+  border:1px solid var(--pc-stroke);
+  padding:2px 6px;
+  border-radius:999px;
+}
+
 /* focus state for accessibility */
 .pc-btn:focus-visible,
 .pc-ava:focus-visible,
-.pc-react-close:focus-visible,
 .pc-emo:focus-visible{
   outline: none;
   box-shadow: 0 0 0 2px var(--pc-ring) inset;
@@ -158,6 +183,4 @@
 /* small devices */
 @media (max-width: 420px){
   .pc-title{ display:none; }             /* keep header compact on phones */
-  .pc-react-strip{ bottom:-52px; }
-  .pc-comment-box{ bottom:-144px; }
 }
