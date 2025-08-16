@@ -14,6 +14,7 @@ export default async function handler(
     apiKey?: string;
     prompt?: string;
     q?: string;
+    ctx?: { post?: { id?: string | number; text?: string } };
   };
   const apiKey = process.env.OPENAI_API_KEY || body.apiKey || "";
   if (!apiKey)
@@ -31,17 +32,35 @@ export default async function handler(
   const prompt = (raw || "").trim();
   if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
+  const ctx = body.ctx || {};
+  const messages: { role: string; content: string }[] = [
+    {
+      role: "system",
+      content:
+        "You are the SuperNOVA assistant orb. Reply in one or two concise sentences. No markdown.",
+    },
+  ];
+  if (ctx.post?.text) {
+    const pid = ctx.post.id ?? "";
+    const ptxt = String(ctx.post.text).slice(0, 2000);
+    messages.push({
+      role: "system",
+      content: `Context post ${pid}: ${ptxt}`,
+    });
+  }
+  messages.push({ role: "user", content: prompt.slice(0, 2000) });
+
   try {
     const r = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         model: "gpt-4o-mini",
         temperature: 0.3,
-        messages: [
-          { role: "system", content: "You are the SuperNOVA assistant orb. Reply in one or two concise sentences. No markdown." },
-          { role: "user", content: prompt.slice(0, 2000) },
-        ],
+        messages,
       }),
     });
     const j = await r.json();
