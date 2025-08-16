@@ -5,6 +5,104 @@ import { isSuperUser } from "../lib/superUser";
 import type { Post } from "../types";
 import { ensureModelViewer } from "../lib/ensureModelViewer";
 
+type PollEditorProps = {
+  question: string;
+  options: string[];
+  setQuestion: (v: string) => void;
+  setOptions: React.Dispatch<React.SetStateAction<string[]>>;
+  onClose: () => void;
+};
+
+function PollEditor({ question, options, setQuestion, setOptions, onClose }: PollEditorProps) {
+  function updateOption(i: number, value: string) {
+    setOptions((opts) => {
+      const next = [...opts];
+      next[i] = value;
+      return next;
+    });
+  }
+
+  function addOption() {
+    setOptions((opts) => [...opts, ""]);
+  }
+
+  function removeOption(i: number) {
+    setOptions((opts) => opts.filter((_, idx) => idx !== i));
+  }
+
+  function handleCancel() {
+    setQuestion("");
+    setOptions(["", ""]);
+    onClose();
+  }
+
+  function handleDone() {
+    const q = question.trim();
+    const opts = options.map((o) => o.trim()).filter(Boolean);
+    if (!q || opts.length < 2) {
+      alert("Please enter a question and at least two options");
+      return;
+    }
+    onClose();
+  }
+
+  const canAdd = options.length < 5;
+
+  return (
+    <div className="composer__poll">
+      <input
+        className="composer__poll-question"
+        placeholder="Poll question"
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+      />
+      {options.map((opt, i) => (
+        <div className="composer__poll-option" key={i}>
+          <input
+            className="composer__poll-option-input"
+            placeholder={`Option ${i + 1}`}
+            value={opt}
+            onChange={(e) => updateOption(i, e.target.value)}
+          />
+          {options.length > 2 && (
+            <button
+              type="button"
+              className="composer__poll-remove"
+              onClick={() => removeOption(i)}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+      <div className="composer__poll-actions">
+        <button
+          type="button"
+          className="composer__poll-add"
+          onClick={addOption}
+          disabled={!canAdd}
+        >
+          Add option
+        </button>
+        <button
+          type="button"
+          className="composer__poll-cancel"
+          onClick={handleCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="composer__poll-done"
+          onClick={handleDone}
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function PostComposer() {
   const addPost = useFeedStore((s) => s.addPost);
 
@@ -15,6 +113,9 @@ export default function PostComposer() {
   const [video, setVideo] = useState<string | null>(null);
   const [pdf, setPdf] = useState<string | null>(null);
   const [model3d, setModel3d] = useState<string | null>(null);
+  const [pollOpen, setPollOpen] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
 
   const imgInput = useRef<HTMLInputElement>(null);
   const vidInput = useRef<HTMLInputElement>(null);
@@ -127,6 +228,9 @@ export default function PostComposer() {
       return;
     }
     const hasText = text.trim().length > 0;
+    const q = pollQuestion.trim();
+    const opts = pollOptions.map((o) => o.trim()).filter(Boolean);
+    const poll = q && opts.length >= 2 ? { question: q, options: opts } : undefined;
 
     const newPost: Post = {
       id: String(Date.now()),
@@ -138,6 +242,7 @@ export default function PostComposer() {
       pdf: pdf || undefined,
       model3d: model3d || undefined,
       link: link || undefined,
+      poll,
     };
 
     addPost(newPost);
@@ -153,6 +258,9 @@ export default function PostComposer() {
     if (pdfInput.current) pdfInput.current.value = "";
     setModel3d(null);
     if (modelInput.current) modelInput.current.value = "";
+    setPollQuestion("");
+    setPollOptions(["", ""]);
+    setPollOpen(false);
   }
 
   return (
@@ -201,6 +309,16 @@ export default function PostComposer() {
             </div>
           )}
         </div>
+      )}
+
+      {pollOpen && (
+        <PollEditor
+          question={pollQuestion}
+          options={pollOptions}
+          setQuestion={setPollQuestion}
+          setOptions={setPollOptions}
+          onClose={() => setPollOpen(false)}
+        />
       )}
 
       <div className="composer__row">
@@ -269,6 +387,15 @@ export default function PostComposer() {
             hidden
             onChange={(e) => addModelFile(e.currentTarget.files)}
           />
+
+          <button
+            className="composer__tool"
+            type="button"
+            title="Add a poll"
+            onClick={() => setPollOpen((p) => !p)}
+          >
+            📊
+          </button>
 
           <input
             className="composer__link"
