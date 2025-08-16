@@ -14,7 +14,8 @@
 }
 
 .feed-content {
-  width: var(--feed-max);
+  max-width: var(--feed-max);
+  width: 100%;
   margin: 0 auto;
   display: grid;
   gap: var(--post-gap);
