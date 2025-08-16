@@ -19,6 +19,12 @@ export default function PostCard({ post }: { post: Post }) {
   const [comments, setComments] = useState<string[]>([]);
   const [reactOpen, setReactOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
+  const [remixOpen, setRemixOpen] = useState(false);
+  const reactionCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of reactions) m.set(r, (m.get(r) || 0) + 1);
+    return Array.from(m.entries());
+  }, [reactions]);
   const cmtRef = useRef<HTMLInputElement | null>(null);
 
   // bus hooks (unchanged logic)
@@ -86,7 +92,6 @@ export default function PostCard({ post }: { post: Post }) {
             role="button"
           >
             <img src={post?.authorAvatar || "/avatar.jpg"} alt={post?.author || "user"} />
-            <span className="pc-ava-emo" aria-hidden>🔥</span>
           </div>
           <div className="pc-meta">
             <div className="pc-handle">{post?.author || "@user"}</div>
@@ -163,54 +168,104 @@ export default function PostCard({ post }: { post: Post }) {
 
           {/* 4 icon actions — thin, line‑weight SVGs; no labels */}
           <div className="pc-actions">
-            <button className="pc-btn" title="React" onClick={() => setReactOpen((v) => !v)}>
+            <button
+              className="pc-btn"
+              title="React"
+              onClick={() => {
+                setReactOpen((v) => !v);
+                setCommentOpen(false);
+                setRemixOpen(false);
+              }}
+            >
               <svg className="pc-ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 21s-7.5-4.5-9.5-8.2A5.9 5.9 0 0 1 12 5.3a5.9 5.9 0 0 1 9.5 7.5C19.5 16.5 12 21 12 21z"
-                      fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M12 21s-7.5-4.5-9.5-8.2A5.9 5.9 0 0 1 12 5.3a5.9 5.9 0 0 1 9.5 7.5C19.5 16.5 12 21 12 21z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
+              {reactions.length > 0 && <span className="pc-count">{reactions.length}</span>}
             </button>
-            <button className="pc-btn" title="Comment" onClick={() => { setCommentOpen((v) => !v); setReactOpen(false); }}>
+            {reactOpen && (
+              <div className="pc-react-strip" role="menu" aria-label="Add reaction">
+                {EMOJI_LIST.map((e, i) => (
+                  <button
+                    key={`${e}-${i}`}
+                    className="pc-emo"
+                    onClick={() => {
+                      bus.emit?.("post:react", { id: post.id, emoji: e });
+                      setReactOpen(false);
+                    }}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              className="pc-btn"
+              title="Comment"
+              onClick={() => {
+                setCommentOpen((v) => !v);
+                setReactOpen(false);
+                setRemixOpen(false);
+              }}
+            >
               <svg className="pc-ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 5h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 5v-5H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
-                      fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M4 5h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 5v-5H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <button
               className="pc-btn"
               title="Remix"
-              onClick={() => bus.emit?.("post:remix", { id: post.id })}
+              onClick={() => {
+                setRemixOpen((v) => !v);
+                setReactOpen(false);
+                setCommentOpen(false);
+              }}
             >
               <svg className="pc-ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 4h8l2 3h4v13H5zM8 10h8M8 14h8" fill="none"
-                      stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M5 4h8l2 3h4v13H5zM8 10h8M8 14h8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <button className="pc-btn" title="Share" onClick={copyLink}>
               <svg className="pc-ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M14 9V5l7 7-7 7v-4H5V9h9z" fill="none"
-                      stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M14 9V5l7 7-7 7v-4H5V9h9z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
           </div>
         </footer>
       </div>
 
-      {/* Single‑row emoji strip that “pops from” the glass frame */}
-      {reactOpen && (
-        <div className="pc-react-strip" role="menu" aria-label="Add reaction">
-          {EMOJI_LIST.map((e, i) => (
-            <button
-              key={`${e}-${i}`}
-              className="pc-emo"
-              onClick={() => {
-                bus.emit?.("post:react", { id: post.id, emoji: e });
-                setReactOpen(false);
-              }}
-            >
-              {e}
-            </button>
+      {!reactOpen && reactionCounts.length > 0 && (
+        <div className="pc-reactions">
+          {reactionCounts.map(([emo, count]) => (
+            <span key={emo} className="pc-emo-count">{emo} {count}</span>
           ))}
-          <button className="pc-react-close" onClick={() => setReactOpen(false)} aria-label="Close">✕</button>
         </div>
       )}
 
@@ -241,6 +296,19 @@ export default function PostCard({ post }: { post: Post }) {
           <button
             className="pc-comment-close"
             onClick={() => setCommentOpen(false)}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {remixOpen && (
+        <div className="pc-remix-box" role="region" aria-label="Remix">
+          <div className="pc-empty">Remix area</div>
+          <button
+            className="pc-comment-close"
+            onClick={() => setRemixOpen(false)}
             aria-label="Close"
           >
             ✕
