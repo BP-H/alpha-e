@@ -28,4 +28,16 @@ describe("usePaginatedPosts", () => {
     act(() => result.current.addPost({ id: 4, title: "four" } as any));
     expect(result.current.posts[0].id).toBe(4);
   });
+
+  it("increments poll votes via vote action", () => {
+    const { result } = renderHook(() => useFeedStore());
+    act(() =>
+      result.current.setPosts([
+        { id: 5, poll: { question: "q", options: ["a", "b"] } } as any,
+      ]),
+    );
+    act(() => result.current.vote(5, 1));
+    const opts = (result.current.posts[0].poll?.options as any[]) || [];
+    expect(opts[1]).toMatchObject({ text: "b", votes: 1 });
+  });
 });

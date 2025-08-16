@@ -28,7 +28,7 @@ export type Post = {
   link?: string;        // optional external link being shared
   poll?: {
     question: string;
-    options: string[];
+    options: Array<string | { text: string; votes: number }>;
   };
 };
 
