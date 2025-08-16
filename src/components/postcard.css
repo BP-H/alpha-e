@@ -94,7 +94,7 @@
 .pc-dot.on{ background:#fff; }
 
 .pc-drawer{ max-height:0; overflow:hidden; transition:max-height .25s ease, opacity .18s ease, transform .18s ease; opacity:0; transform: translateY(-4px); background: rgba(14,16,24,.65); border-top:1px solid var(--pc-stroke); color:var(--pc-text); }
-.pc.dopen .pc-drawer{ max-height: 560px; opacity:1; transform:none; }
+.pc.dopen .pc-drawer{ max-height: 75vh; overflow-y:auto; opacity:1; transform:none; }
 .pc-drawer-inner{ padding:12px 14px; }
 .pc-emoji-bar{ display:flex; flex-wrap:wrap; gap:6px; }
 .pc-emoji{ height:34px; min-width:34px; padding:0 6px; border-radius:999px; display:grid; place-items:center; font-size:18px; cursor:pointer; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); }
