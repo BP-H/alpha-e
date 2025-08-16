@@ -4,6 +4,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+body { overflow-x: hidden; }
 img, svg, video, canvas { display: block; max-width: 100%; }
 button, input, textarea, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid #0A84FF; outline-offset: 2px; }
@@ -19,7 +20,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   --glass-strong: color-mix(in srgb, rgba(255,255,255,0.95) 45%, var(--glass-base) 55%);
   --shadow: 0 4px 12px rgba(0,0,0,0.5);
 
-  --feed-max: min(100%, 1200px);
+  --feed-max: min(100vw, 600px);
   --stripe-h: 64px;
   --orb-size: 76px;
 
