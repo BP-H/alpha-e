@@ -108,8 +108,8 @@ export default function AssistantOrb() {
 
   // feed context
   useEffect(() => {
-    const a = bus.on?.("feed:hover", (p: { post: Post }) => setCtxPost(p.post));
-    const b = bus.on?.("feed:select", (p: { post: Post }) => setCtxPost(p.post));
+    const a = bus.on?.("feed:hover", (p) => setCtxPost(p.post));
+    const b = bus.on?.("feed:select", (p) => setCtxPost(p.post));
     return () => { try { a?.(); } catch {}; try { b?.(); } catch {}; };
   }, []);
 

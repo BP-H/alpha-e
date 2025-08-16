@@ -49,7 +49,7 @@ export default function InfiniteFeed({
     const r = bus.on("feed:refresh", () => {
       setList([]); setItems([]); setPageInternal(1);
     });
-    const s = bus.on("feed:provider-change", (p?: { provider?: ProviderName; query?: string }) => {
+    const s = bus.on("feed:provider-change", (p) => {
       // parent can re-render with new props, but this adds a quick path
       if (p?.provider) (document.body.dataset as any).feedProvider = p.provider;
     });

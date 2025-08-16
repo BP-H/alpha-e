@@ -3,12 +3,12 @@ import { on, emit } from "./bus";
 
 describe("bus", () => {
   it("handles listener errors via callback", () => {
-    const off1 = on("evt", () => { throw new Error("boom"); });
+    const off1 = on("post:react", (_p) => { throw new Error("boom"); });
     let called = false;
-    const off2 = on("evt", () => { called = true; });
+    const off2 = on("post:react", (_p) => { called = true; });
 
     const errors: unknown[] = [];
-    emit("evt", undefined, (err) => errors.push(err));
+    emit("post:react", { id: 1, emoji: "👍" }, (err) => errors.push(err));
 
     expect(errors).toHaveLength(1);
     expect(called).toBe(true);
@@ -18,8 +18,8 @@ describe("bus", () => {
   });
 
   it("rethrows listener errors when no callback provided", () => {
-    const off = on("evt", () => { throw new Error("boom"); });
-    expect(() => emit("evt")).toThrow("boom");
+    const off = on("post:react", (_p) => { throw new Error("boom"); });
+    expect(() => emit("post:react", { id: 1, emoji: "🔥" })).toThrow("boom");
     off();
   });
 });

@@ -30,7 +30,7 @@ export default function BackgroundVoid() {
 
   // listen for updates from the orb
   useEffect(() => {
-    return bus.on("world:update", (patch: Partial<WorldState>) => {
+    return bus.on("world:update", (patch) => {
       setW((prev) => clampWorld({ ...prev, ...patch }));
     });
   }, []);

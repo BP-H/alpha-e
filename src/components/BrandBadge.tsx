@@ -11,7 +11,7 @@ export default function BrandBadge({ onEnterUniverse }: { onEnterUniverse: () =>
           className="brand-dot"
           aria-label="Toggle brand menu"
           onClick={() => setOpen(o => !o)}
-          onDoubleClick={() => bus.emit("sidebar:toggle", undefined)} /* bus.emit expects (event, payload) */
+          onDoubleClick={() => bus.emit("sidebar:toggle")}
         >
           <img
             src="/supernova.png"

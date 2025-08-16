@@ -28,7 +28,7 @@ export default function PortalOverlay() {
 
   // Bus listener: position, trigger animation, and provide a timeout fallback.
   useEffect(() => {
-    const off = bus.on("orb:portal", ({ x, y }: { x: number; y: number }) => {
+    const off = bus.on("orb:portal", ({ x, y }) => {
       const el = ref.current;
       if (!el) return;
 
