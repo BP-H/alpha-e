@@ -1,5 +1,7 @@
 // /api/openai-quick-chat.ts
-export default async function handler(req: any, res: any) {
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
   const { apiKey } = (req.body || {});
   if (!apiKey) return res.status(400).json({ ok: false, error: "Missing apiKey" });
