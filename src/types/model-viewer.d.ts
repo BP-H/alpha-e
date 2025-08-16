@@ -1,6 +1,9 @@
 // src/types/model-viewer.d.ts
-import type { ModelViewerElement } from '@google/model-viewer';
-import type { CSSProperties, ReactEventHandler } from 'react';
+import type { CSSProperties, ReactEventHandler } from "react";
+
+interface ModelViewerElement extends HTMLElement {
+  [key: string]: any;
+}
 
 declare global {
   namespace JSX {
