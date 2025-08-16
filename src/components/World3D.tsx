@@ -92,9 +92,11 @@ export default function World3D() {
     let tint: RGB = { r: 48, g: 64, b: 140 };
     let tintTarget: RGB = { r: 48, g: 64, b: 140 };
 
-    // Watch visible post images
+    // Watch visible post images (guards for environments without observers)
+    const hasIO = typeof IntersectionObserver !== "undefined";
     let io: IntersectionObserver | null = null;
     const scanImages = () => {
+      if (!hasIO) return;
       io?.disconnect();
       const imgs = Array.from(document.querySelectorAll<HTMLImageElement>(".pc-media img"));
       if (!imgs.length) return;
@@ -106,13 +108,16 @@ export default function World3D() {
         const c = avgColor(best.target as HTMLImageElement);
         if (c) tintTarget = c;
       }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
-      imgs.forEach(img => (img.complete ? io!.observe(img) : img.addEventListener("load", () => io!.observe(img), { once: true })));
+      imgs.forEach(img => (
+        img.complete ? io!.observe(img) : img.addEventListener("load", () => io!.observe(img), { once: true })
+      ));
     };
-    scanImages();
+    if (hasIO) scanImages();
 
     const feed = document.querySelector(".feed-content");
+    const hasMO = typeof MutationObserver !== "undefined";
     let mo: MutationObserver | null = null;
-    if (feed) {
+    if (feed && hasIO && hasMO) {
       mo = new MutationObserver(() => scanImages());
       mo.observe(feed, { childList: true, subtree: true });
     }
