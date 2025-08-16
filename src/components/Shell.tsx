@@ -7,7 +7,7 @@ import MenuOrb from "./MenuOrb";
 import ChatDock from "./ChatDock";
 import Sidebar from "./Sidebar";
 import PortalOverlay from "./PortalOverlay";
-import PostComposer from "./PostComposer";
+import NeonRibbonComposer from "./NeonRibbonComposer";
 import AvatarPortal from "./AvatarPortal";
 
 export default function Shell() {
@@ -22,11 +22,8 @@ export default function Shell() {
       <PortalOverlay />
 
       <main>
-        <Feed>
-          <div style={{ padding: "12px 0" }}>
-            <PostComposer />
-          </div>
-        </Feed>
+        <NeonRibbonComposer />
+        <Feed />
       </main>
 
       <ChatDock />
