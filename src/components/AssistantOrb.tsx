@@ -1,6 +1,7 @@
 // src/components/AssistantOrb.tsx
 import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
+import { logError } from "../lib/logger";
 import type { AssistantMessage, Post } from "../types";
 import RadialMenu from "./RadialMenu";
 import { HOLD_MS } from "./orbConstants";
@@ -153,10 +154,27 @@ export default function AssistantOrb() {
           (window as WindowWithSpeechRecognition).SpeechRecognition)) ||
       null;
     if (!C) { setToast("Voice not supported"); return null; }
-    const rec: SpeechRecognitionLike = new C();
+    let rec: SpeechRecognitionLike;
+    try {
+      rec = new C();
+    } catch (err) {
+      logError(err);
+      setToast("Mic error");
+      return null;
+    }
     rec.continuous = true; rec.interimResults = true; rec.lang = "en-US";
     rec.onstart = () => { setMic(true); setToast("Listening…"); };
-    rec.onend   = () => { setMic(false); setToast(""); if (restartRef.current) { try { rec.start?.(); } catch {} } };
+    rec.onend = () => {
+      setMic(false);
+      setToast("");
+      if (restartRef.current) {
+        try {
+          rec.start?.();
+        } catch (err) {
+          logError(err);
+        }
+      }
+    };
     rec.onerror = (_e: SpeechRecognitionErrorEvent) => { setMic(false); setToast("Mic error"); };
     rec.onresult = (e: SpeechRecognitionEvent) => {
       let temp = ""; const finals: string[] = [];
@@ -175,11 +193,11 @@ export default function AssistantOrb() {
     if (mic) return;
     const r = ensureRec(); if (!r) return;
     restartRef.current = true;
-    try { r.start?.(); } catch { setMic(false); setToast("Mic error"); }
+    try { r.start?.(); } catch (err) { logError(err); setMic(false); setToast("Mic error"); }
   }
   function stopListening() {
     restartRef.current = false;
-    try { recRef.current?.stop?.(); } catch {}
+    try { recRef.current?.stop?.(); } catch (err) { logError(err); }
     setMic(false);
     setInterim("");
   }
