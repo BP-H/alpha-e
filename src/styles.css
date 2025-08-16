@@ -296,3 +296,24 @@ button, input, textarea, select { font: inherit; color: inherit; }
   transition: clip-path .65s cubic-bezier(.22,.61,.36,1), opacity .2s ease;
 }
 .portal-overlay.on { --r0: 160vmax; opacity: 1; }
+
+/* ---- 3D world layering & sizing ---- */
+.world-layer{
+  position: fixed;
+  inset: 0;
+  z-index: 0;            /* world sits behind UI */
+  pointer-events: none;  /* never block clicks */
+}
+.r3f-root{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.r3f-root > canvas{
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+main{ position: relative; z-index: 1; } /* UI above world */
