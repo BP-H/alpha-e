@@ -3,6 +3,7 @@ import React from "react";
 import Feed from "./feed/Feed";
 import World3D from "./World3D";
 import AssistantOrb from "./AssistantOrb";
+import MenuOrb from "./MenuOrb";
 import ChatDock from "./ChatDock";
 import Sidebar from "./Sidebar";
 import PortalOverlay from "./PortalOverlay";
@@ -16,7 +17,7 @@ export default function Shell() {
       <div className="world-layer" aria-hidden>
         <World3D />
       </div>
-
+      <MenuOrb />
       <Sidebar />
       <PortalOverlay />
 
