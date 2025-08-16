@@ -36,6 +36,10 @@ You can deploy your new Vite project with a single command from your terminal us
 $ vercel
 ```
 
+## Vite configuration for Vercel
+
+The `vite.config.ts` file sets `base: './'` so built assets use relative paths and `build.outDir: 'dist'` because Vercel serves compiled files from that directory.
+
 ## Viewing Console Errors on Vercel
 
 When debugging a production deployment, you can inspect runtime errors in two ways:

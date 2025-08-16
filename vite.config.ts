@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: './',          // ← ADD THIS (critical for Vercel)
+  base: './', // ensures relative asset paths for Vercel
   build: {
-    outDir: 'dist',    // ← ADD THIS (tells Vercel where built files are)
+    outDir: 'dist', // Vercel serves files from this directory
     rollupOptions: {
       output: {
         manualChunks(id) {
