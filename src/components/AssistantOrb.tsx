@@ -6,6 +6,7 @@ import type { AssistantMessage, Post } from "../types";
 import RadialMenu from "./RadialMenu";
 import { HOLD_MS } from "./orbConstants";
 import { motion, useReducedMotion } from "framer-motion";
+import { askLLM } from "../lib/assistant";
 
 /**
  * Assistant Orb — circular quick menu + 60fps drag + voice.
@@ -75,12 +76,28 @@ const EMOJI_LIST: string[] = [
   "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩"
 ];
 
-async function askLLMStub(text: string) {
-  return `🤖 I’m a stub, but I heard: “${text}”`;
-}
-
 function getClosestPostId(el: Element | null): string | null {
   return el?.closest?.("[data-post-id]")?.getAttribute?.("data-post-id") ?? null;
+}
+
+function getOpenAIKey(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const raw = window.localStorage.getItem("sn.keys.openai");
+    return raw ? JSON.parse(raw) : "";
+  } catch {
+    return "";
+  }
+}
+
+function getPostText(p: Post | null): string {
+  if (!p) return "";
+  try {
+    const el = document.querySelector(`[data-post-id="${p.id}"]`);
+    return el?.textContent?.trim().slice(0, 2000) || "";
+  } catch {
+    return "";
+  }
 }
 
 export default function AssistantOrb() {
@@ -111,6 +128,7 @@ export default function AssistantOrb() {
   const [interim, setInterim] = useState("");
   const [msgs, setMsgs] = useState<AssistantMessage[]>([]);
   const [ctxPost, setCtxPost] = useState<Post | null>(null);
+  const [ctxPostText, setCtxPostText] = useState("");
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
   const [petal, setPetal] = useState<null | "comment" | "remix" | "share">(null);
@@ -135,8 +153,12 @@ export default function AssistantOrb() {
 
   // feed context
   useEffect(() => {
-    const offHover = bus.on?.("feed:hover", (p: { post: Post }) => setCtxPost(p.post));
-    const offSelect = bus.on?.("feed:select", (p: { post: Post }) => setCtxPost(p.post));
+    const onCtx = (p: { post: Post }) => {
+      setCtxPost(p.post);
+      setCtxPostText(getPostText(p.post));
+    };
+    const offHover = bus.on?.("feed:hover", onCtx);
+    const offSelect = bus.on?.("feed:select", onCtx);
     return () => {
       offHover?.();
       offSelect?.();
@@ -246,8 +268,12 @@ export default function AssistantOrb() {
       return;
     }
 
-    const resp = await askLLMStub(T);
-    push({ id: uuid(), role: "assistant", text: resp, ts: Date.now() });
+    const apiKey = getOpenAIKey();
+    const ctx = post
+      ? { post: { id: post.id, text: ctxPostText || getPostText(post) } }
+      : undefined;
+    const resp = await askLLM(T, ctx, apiKey);
+    push({ ...resp, postId: post?.id ?? null });
   }
 
   function handleEmojiClick(emoji: string) {
