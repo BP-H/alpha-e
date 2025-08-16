@@ -13,7 +13,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data = await r.json().catch(() => ({}));
     if (!r.ok) return res.status(r.status).json({ ok: false, error: data?.error?.message || "Failed" });
     return res.status(200).json({ ok: true, sampleModel: data?.data?.[0]?.id || "ok" });
-  } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || "Network error" });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Network error";
+    return res.status(500).json({ ok: false, error: message });
   }
 }
