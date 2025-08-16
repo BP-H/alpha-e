@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import { logError } from "../lib/logger";
+import { askLLM } from "../lib/assistant";
 import type { AssistantMessage, Post } from "../types";
 import RadialMenu from "./RadialMenu";
 import { HOLD_MS } from "./orbConstants";
@@ -74,10 +75,6 @@ const EMOJI_LIST: string[] = [
   "💙","💜","🖤","🤍","❤️‍🔥","❤️‍🩹","💯","💬","🗯️","🎉","🎊","🎁","🏆","🎮","🚀","✈️","🚗","🏠","🫨","🗿",
   "📱","💡","🎵","📢","📚","📈","✅","❌","❗","❓","‼️","⚠️","🌀","🎬","🍕","🍔","🍎","🍺","⚙️","🧩"
 ];
-
-async function askLLMStub(text: string) {
-  return `🤖 I’m a stub, but I heard: “${text}”`;
-}
 
 function getClosestPostId(el: Element | null): string | null {
   return el?.closest?.("[data-post-id]")?.getAttribute?.("data-post-id") ?? null;
@@ -246,8 +243,8 @@ export default function AssistantOrb() {
       return;
     }
 
-    const resp = await askLLMStub(T);
-    push({ id: uuid(), role: "assistant", text: resp, ts: Date.now() });
+    const resp = await askLLM(T, post);
+    push(resp);
   }
 
   function handleEmojiClick(emoji: string) {
