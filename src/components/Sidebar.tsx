@@ -4,14 +4,6 @@ import "./Sidebar.css";
 import bus from "../lib/bus";
 import { useTheme } from "../lib/useTheme";
 
-type Keys = {
-  openai?: string;
-  anthropic?: string;
-  perplexity?: string;
-  stability?: string;
-  elevenlabs?: string;
-};
-
 function useLocal<T>(key: string, init: T) {
   const [v, setV] = useState<T>(() => {
     if (typeof window === "undefined") return init;
@@ -76,15 +68,28 @@ export default function Sidebar() {
     document.documentElement.style.setProperty("--accent", accent);
   }, [accent]);
 
-  const [keys, setKeys] = useLocal<Keys>("sn.keys", {});
-  const [showKey, setShowKey] = useState<string | null>(null);
-  const setKey = (k: keyof Keys, v: string) => setKeys({ ...keys, [k]: v });
+  const [openaiKey, setOpenaiKey] = useLocal("sn.keys.openai", "");
+  const [anthropicKey, setAnthropicKey] = useLocal("sn.keys.anthropic", "");
+  const [perplexityKey, setPerplexityKey] = useLocal("sn.keys.perplexity", "");
+  const [stabilityKey, setStabilityKey] = useLocal("sn.keys.stability", "");
+  const [elevenlabsKey, setElevenlabsKey] = useLocal("sn.keys.elevenlabs", "");
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const toggleShow = (k: string) =>
+    setShowKeys((s) => ({ ...s, [k]: !s[k] }));
   const clearAll = () => {
     Object.keys(localStorage)
       .filter((k) => k.startsWith("sn."))
       .forEach((k) => localStorage.removeItem(k));
     location.reload();
   };
+
+  const keyFields = [
+    { id: "openai", label: "OpenAI", value: openaiKey, setter: setOpenaiKey },
+    { id: "anthropic", label: "Anthropic", value: anthropicKey, setter: setAnthropicKey },
+    { id: "perplexity", label: "Perplexity", value: perplexityKey, setter: setPerplexityKey },
+    { id: "stability", label: "Stability", value: stabilityKey, setter: setStabilityKey },
+    { id: "elevenlabs", label: "ElevenLabs", value: elevenlabsKey, setter: setElevenlabsKey },
+  ];
 
   const pages = [
     { label: "Home", path: "/", icon: "🏠" },
@@ -278,7 +283,39 @@ export default function Sidebar() {
             <p className="hint">Changes apply instantly and persist on this device.</p>
           </section>
 
-          {/* API Keys Vault, Integrations, Privacy, Danger Zone sections ... */}
+          <section className="card">
+            <header>API Keys</header>
+            <div className="keys">
+              {keyFields.map(({ id, label, value, setter }) => (
+                <div key={id} className="key-field">
+                  <label className="label" htmlFor={`key-${id}`}>
+                    {label}
+                  </label>
+                  <div className="key-input">
+                    <input
+                      id={`key-${id}`}
+                      className="input"
+                      type={showKeys[id] ? "text" : "password"}
+                      value={value}
+                      onChange={(e) => setter(e.target.value)}
+                    />
+                    <button
+                      className="key-toggle"
+                      onClick={() => toggleShow(id)}
+                      type="button"
+                    >
+                      {showKeys[id] ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="key-clear" onClick={clearAll} type="button">
+              Clear all keys
+            </button>
+          </section>
+
+          {/* Integrations, Privacy, Danger Zone sections ... */}
 
           <footer className="sb-foot">made with ✨</footer>
         </div>

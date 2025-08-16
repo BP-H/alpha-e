@@ -127,3 +127,49 @@
 
 .card { /* ...unchanged card styles... */ }
 
+/* API Keys card */
+.keys {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.key-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.key-input {
+  display: flex;
+  gap: 8px;
+}
+.key-input .input {
+  flex: 1;
+}
+.key-toggle,
+.key-clear {
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.10);
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.key-toggle:hover,
+.key-clear:hover {
+  background: rgba(255,255,255,.16);
+}
+.key-clear {
+  margin-top: 4px;
+  width: 100%;
+}
+
+@media (max-width: 400px) {
+  .key-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .key-toggle {
+    align-self: flex-end;
+  }
+}
+
