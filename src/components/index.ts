@@ -7,4 +7,6 @@ export { default as Feed } from "./Feed";
 // ...or directly:
 // export { default as Feed } from "./feed/Feed";
 
+export { default as ErrorBoundary } from "./ErrorBoundary";
+
 export type { Post } from "../types";
