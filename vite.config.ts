@@ -3,9 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',          // ← ADD THIS (critical for Vercel)
+  base: '/',                           // keep SPA at root
+  resolve: {
+    // 🔧 critical: force ONE copy of 'three' in the bundle
+    dedupe: ['three'],
+  },
   build: {
-    outDir: 'dist',    // ← ADD THIS (tells Vercel where built files are)
+    outDir: 'dist',
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -14,8 +18,8 @@ export default defineConfig({
             if (id.includes('three')) return 'three';
             return 'vendor';
           }
-        }
-      }
-    }
-  }
+        },
+      },
+    },
+  },
 });
