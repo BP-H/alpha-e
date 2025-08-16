@@ -6,17 +6,14 @@ export function ensureModelViewer(): Promise<void> {
   if (customElements.get("model-viewer")) return Promise.resolve();
   if (loading) return loading;
 
-  // Lazy-load the model-viewer element from the npm package. This avoids
-  // injecting scripts at runtime and ensures a single Three.js instance is
-  // used across the app.
-  loading = (async () => {
-    try {
-      await import("@google/model-viewer");
-    } catch (error) {
-      loading = null;
-      console.error(error);
-      throw error;
-    }
-  })();
+  loading = new Promise<void>((resolve, reject) => {
+    const s = document.createElement("script");
+    // ESM build with three bundled – does not touch your app's three version
+    s.type = "module";
+    s.src = "https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js";
+    s.onload = () => resolve();
+    s.onerror = (e) => reject(e);
+    document.head.appendChild(s);
+  });
   return loading;
 }
