@@ -36,6 +36,13 @@ You can deploy your new Vite project with a single command from your terminal us
 $ vercel
 ```
 
+## Viewing Console Errors on Vercel
+
+When debugging a production deployment, you can inspect runtime errors in two ways:
+
+1. Open your deployed site in the browser and use the browser's developer tools (**Console** tab) to see client-side errors.
+2. Visit your project on Vercel and open the **Logs** tab or run `vercel logs <deployment-url>` from the CLI to view server-side console output.
+
 ## Demo posts
 
 To preview the sample posts included in [`src/lib/placeholders.ts`](src/lib/placeholders.ts) after deploying to Vercel:
