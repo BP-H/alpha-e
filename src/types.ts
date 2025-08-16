@@ -26,6 +26,10 @@ export type Post = {
   pdf?: string;         // optional PDF URL (blob:/remote)
   model3d?: string;     // optional 3D model URL (blob:/remote)
   link?: string;        // optional external link being shared
+  poll?: {
+    question: string;
+    options: string[];
+  };
 };
 
 export type AssistantMessage = {
