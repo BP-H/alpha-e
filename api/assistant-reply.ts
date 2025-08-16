@@ -11,7 +11,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     prompt?: string;
     q?: string;
     model?: string;
-    ctx?: { post?: { id?: string | number; text?: string } };
+    // We accept both shapes:
+    //  - { ctx: { postId?, title?, text? } }
+    //  - { ctx: { post: { id?, title?, text? } } }
+    ctx?: {
+      postId?: string | number;
+      title?: string;
+      text?: string;
+      post?: { id?: string | number; title?: string; text?: string };
+    };
   };
 
   // In production, only the server env is used. In local/dev, allow body.apiKey as a fallback.
@@ -33,8 +41,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     typeof body.prompt === "string"
       ? body.prompt
       : typeof body.q === "string"
-      ? body.q
-      : "";
+        ? body.q
+        : "";
   const prompt = (raw || "").trim().slice(0, 2000);
   if (!prompt) {
     return res.status(400).json({ ok: false, error: "Missing prompt" });
@@ -46,18 +54,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : "gpt-4o-mini";
 
   const ctx = body.ctx || {};
-  const messages: { role: "system" | "user"; content: string }[] = [
+  const ctxPostId = ctx.postId ?? ctx.post?.id;
+  const ctxTitle = ctx.title ?? ctx.post?.title;
+  const ctxTextRaw = ctx.text ?? ctx.post?.text;
+  const ctxText = typeof ctxTextRaw === "string" ? ctxTextRaw.slice(0, 1000) : "";
+
+  const messages: Array<{ role: "system" | "user"; content: string }> = [
     {
       role: "system",
       content:
         "You are the SuperNOVA assistant orb. Reply in one or two concise sentences. No markdown.",
     },
   ];
-  if (ctx.post?.text) {
-    const pid = ctx.post.id ?? "";
-    const ptxt = String(ctx.post.text).slice(0, 2000);
-    messages.push({ role: "system", content: `Context post ${pid}: ${ptxt}` });
+
+  if (ctxPostId || ctxTitle || ctxText) {
+    const parts: string[] = [];
+    if (ctxPostId) parts.push(`ID ${ctxPostId}`);
+    if (ctxTitle) parts.push(`title "${ctxTitle}"`);
+    if (ctxText) parts.push(`content: ${ctxText}`);
+    messages.push({
+      role: "system",
+      content: `Context from hovered post — ${parts.join(" — ")}`,
+    });
   }
+
   messages.push({ role: "user", content: prompt });
 
   try {
@@ -73,6 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({ model, temperature: 0.3, messages }),
       signal: ctrl.signal,
     });
+
     clearTimeout(timer);
 
     const j = await r.json();

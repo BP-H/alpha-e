@@ -1,10 +1,15 @@
 // src/lib/assistant.ts
 import type { AssistantMessage, RemixSpec } from "../types";
 
+type AssistantCtx = {
+  postId?: string | number;
+  title?: string;
+  text?: string;
+} | null;
+
 export async function askLLM(
   input: string,
-  ctx?: Record<string, unknown>,
-  apiKey?: string,
+  ctx?: AssistantCtx,
 ): Promise<AssistantMessage> {
   try {
     // Optional model picked in UI and saved to localStorage
@@ -14,8 +19,7 @@ export async function askLLM(
         const raw = window.localStorage.getItem("sn.model.openai");
         if (raw) {
           try {
-            const parsed = JSON.parse(raw);
-            model = String(parsed ?? "").trim() || undefined;
+            model = String(JSON.parse(raw) ?? "").trim() || undefined;
           } catch {
             model = raw.trim() || undefined;
           }
@@ -25,9 +29,9 @@ export async function askLLM(
       }
     }
 
-    const payload: Record<string, unknown> = { prompt: input, ctx };
+    const payload: Record<string, unknown> = { prompt: input };
+    if (ctx) payload.ctx = ctx;
     if (model) payload.model = model;
-    if (apiKey) payload.apiKey = apiKey; // dev/local only; server prefers env key
 
     const res = await fetch("/api/assistant-reply", {
       method: "POST",
@@ -42,6 +46,7 @@ export async function askLLM(
         role: "assistant",
         text: data.text || "ok",
         ts: Date.now(),
+        postId: ctx?.postId ?? null,
       };
     }
   } catch {
@@ -54,6 +59,7 @@ export async function askLLM(
     role: "assistant",
     text: `💡 stub: “${input}”`,
     ts: Date.now(),
+    postId: ctx?.postId ?? null,
   };
 }
 

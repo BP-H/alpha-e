@@ -2,11 +2,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import bus from "../lib/bus";
 import { logError } from "../lib/logger";
+import { askLLM } from "../lib/assistant";
 import type { AssistantMessage, Post } from "../types";
 import RadialMenu from "./RadialMenu";
 import { HOLD_MS } from "./orbConstants";
 import { motion, useReducedMotion } from "framer-motion";
-import { askLLM } from "../lib/assistant";
 
 /**
  * Assistant Orb — circular quick menu + 60fps drag + voice.
@@ -78,16 +78,6 @@ const EMOJI_LIST: string[] = [
 
 function getClosestPostId(el: Element | null): string | null {
   return el?.closest?.("[data-post-id]")?.getAttribute?.("data-post-id") ?? null;
-}
-
-function getOpenAIKey(): string {
-  if (typeof window === "undefined") return "";
-  try {
-    const raw = window.localStorage.getItem("sn.keys.openai");
-    return raw ? JSON.parse(raw) : "";
-  } catch {
-    return "";
-  }
 }
 
 function getPostText(p: Post | null): string {
@@ -268,19 +258,18 @@ export default function AssistantOrb() {
       return;
     }
 
-    const apiKey = getOpenAIKey();
-    const ctx = post
-      ? { post: { id: post.id, text: ctxPostText || getPostText(post) } }
-      : undefined;
-    const resp = await askLLM(T, ctx, apiKey);
-    push({ ...resp, postId: post?.id ?? null });
-  }
-
-  function handleEmojiClick(emoji: string) {
-    if (!ctxPost) { setToast("Hover a post first"); return; }
-    bus.emit?.("post:react", { id: ctxPost.id, emoji });
-    setToast(`Reacted ${emoji}`);
-    setTimeout(() => setToast(""), 900);
+    // Ask the model with optional post context (id, title, and visible text)
+    const resp = await askLLM(
+      T,
+      post
+        ? {
+            postId: post.id as string | number,
+            title: (post as any)?.title,
+            text: ctxPostText || getPostText(post),
+          }
+        : null
+    );
+    push(resp);
   }
 
   // hover highlight
@@ -390,7 +379,7 @@ export default function AssistantOrb() {
       if (!movedRef.current && dist > DRAG_THRESHOLD) {
         movedRef.current = true;
         preventTapRef.current = true;
-        // Start listening once drag threshold is crossed (your request)
+        // Start listening once drag threshold is crossed
         if (!mic) { suppressClickRef.current = true; startListening(); }
       }
 
@@ -613,7 +602,6 @@ export default function AssistantOrb() {
     }
   }
 
-
   return (
     <>
       <style>{keyframes}</style>
@@ -765,7 +753,7 @@ export default function AssistantOrb() {
         <div className="assistant-petal">
           <div className="ap-head">
             <div className="ap-dot" />
-          <div className="ap-title">{petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
+            <div className="ap-title">{petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
             <div className="ap-sub">{ctxPost ? `Post ${ctxPost.id}` : "Hover a post to target"}</div>
             <button className="ap-btn" onClick={() => setPetal(null)}>Close</button>
           </div>
