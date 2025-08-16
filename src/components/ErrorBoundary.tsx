@@ -35,10 +35,10 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
 
-      const msg =
+      const message =
         this.state.error?.message ?? "An unexpected error occurred.";
 
-      return (
+      return this.state.error ? (
         <div
           role="alert"
           aria-live="assertive"
@@ -54,9 +54,9 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               "14px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif",
           }}
         >
-          {msg}
+          {message}
         </div>
-      );
+      ) : null;
     }
 
     return this.props.children;
