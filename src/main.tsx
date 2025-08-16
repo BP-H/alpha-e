@@ -2,7 +2,7 @@
 import "./bootstrap";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App";
 
 const root = document.getElementById("root");
@@ -14,11 +14,11 @@ if (!root) {
 } else {
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
-          <Route path="/*" element={<App />} />
+          <Route path="*" element={<App />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </React.StrictMode>,
   );
 }
