@@ -1,18 +1,44 @@
 // src/lib/assistant.ts
-import type { AssistantMessage, RemixSpec, ID } from "../types";
+import type { AssistantMessage, RemixSpec } from "../types";
+
+type AssistantCtx = {
+  postId?: string | number;
+  title?: string;
+  text?: string;
+} | null;
 
 export async function askLLM(
   input: string,
-  ctxPost?: { id: ID; title?: string } | null,
+  ctx?: AssistantCtx,
 ): Promise<AssistantMessage> {
   try {
+    // Optional model picked in UI and saved to localStorage
+    let model: string | undefined;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem("sn.model.openai");
+        if (raw) {
+          try {
+            model = String(JSON.parse(raw) ?? "").trim() || undefined;
+          } catch {
+            model = raw.trim() || undefined;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     const payload: Record<string, unknown> = { prompt: input };
-    if (ctxPost) payload.ctx = { postId: ctxPost.id, title: ctxPost.title };
+    if (ctx) payload.ctx = ctx;
+    if (model) payload.model = model;
+
     const res = await fetch("/api/assistant-reply", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     if (res.ok) {
       const data = await res.json();
       return {
@@ -20,21 +46,26 @@ export async function askLLM(
         role: "assistant",
         text: data.text || "ok",
         ts: Date.now(),
-        postId: ctxPost?.id ?? null,
+        postId: ctx?.postId ?? null,
       };
     }
-  } catch {}
+  } catch {
+    // fall through to stub
+  }
+
   // offline stub so builds never fail
   return {
     id: crypto.randomUUID(),
     role: "assistant",
     text: `💡 stub: “${input}”`,
     ts: Date.now(),
-    postId: ctxPost?.id ?? null,
+    postId: ctx?.postId ?? null,
   };
 }
 
-export async function imageToVideo(spec: RemixSpec): Promise<{ ok: boolean; url?: string; error?: string; }> {
+export async function imageToVideo(
+  spec: RemixSpec
+): Promise<{ ok: boolean; url?: string; error?: string }> {
   try {
     const res = await fetch("/api/image-to-video", {
       method: "POST",

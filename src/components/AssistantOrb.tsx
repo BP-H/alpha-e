@@ -80,6 +80,16 @@ function getClosestPostId(el: Element | null): string | null {
   return el?.closest?.("[data-post-id]")?.getAttribute?.("data-post-id") ?? null;
 }
 
+function getPostText(p: Post | null): string {
+  if (!p) return "";
+  try {
+    const el = document.querySelector(`[data-post-id="${p.id}"]`);
+    return el?.textContent?.trim().slice(0, 2000) || "";
+  } catch {
+    return "";
+  }
+}
+
 export default function AssistantOrb() {
   // committed position
   const [pos, setPos] = useState(() => {
@@ -108,6 +118,7 @@ export default function AssistantOrb() {
   const [interim, setInterim] = useState("");
   const [msgs, setMsgs] = useState<AssistantMessage[]>([]);
   const [ctxPost, setCtxPost] = useState<Post | null>(null);
+  const [ctxPostText, setCtxPostText] = useState("");
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
   const [petal, setPetal] = useState<null | "comment" | "remix" | "share">(null);
@@ -132,8 +143,12 @@ export default function AssistantOrb() {
 
   // feed context
   useEffect(() => {
-    const offHover = bus.on?.("feed:hover", (p: { post: Post }) => setCtxPost(p.post));
-    const offSelect = bus.on?.("feed:select", (p: { post: Post }) => setCtxPost(p.post));
+    const onCtx = (p: { post: Post }) => {
+      setCtxPost(p.post);
+      setCtxPostText(getPostText(p.post));
+    };
+    const offHover = bus.on?.("feed:hover", onCtx);
+    const offSelect = bus.on?.("feed:select", onCtx);
     return () => {
       offHover?.();
       offSelect?.();
@@ -243,15 +258,18 @@ export default function AssistantOrb() {
       return;
     }
 
-    const resp = await askLLM(T, post);
+    // Ask the model with optional post context (id, title, and visible text)
+    const resp = await askLLM(
+      T,
+      post
+        ? {
+            postId: post.id as string | number,
+            title: (post as any)?.title,
+            text: ctxPostText || getPostText(post),
+          }
+        : null
+    );
     push(resp);
-  }
-
-  function handleEmojiClick(emoji: string) {
-    if (!ctxPost) { setToast("Hover a post first"); return; }
-    bus.emit?.("post:react", { id: ctxPost.id, emoji });
-    setToast(`Reacted ${emoji}`);
-    setTimeout(() => setToast(""), 900);
   }
 
   // hover highlight
@@ -361,7 +379,7 @@ export default function AssistantOrb() {
       if (!movedRef.current && dist > DRAG_THRESHOLD) {
         movedRef.current = true;
         preventTapRef.current = true;
-        // Start listening once drag threshold is crossed (your request)
+        // Start listening once drag threshold is crossed
         if (!mic) { suppressClickRef.current = true; startListening(); }
       }
 
@@ -584,7 +602,6 @@ export default function AssistantOrb() {
     }
   }
 
-
   return (
     <>
       <style>{keyframes}</style>
@@ -736,7 +753,7 @@ export default function AssistantOrb() {
         <div className="assistant-petal">
           <div className="ap-head">
             <div className="ap-dot" />
-          <div className="ap-title">{petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
+            <div className="ap-title">{petal === "comment" ? "Comment" : petal === "remix" ? "Remix" : "Share"}</div>
             <div className="ap-sub">{ctxPost ? `Post ${ctxPost.id}` : "Hover a post to target"}</div>
             <button className="ap-btn" onClick={() => setPetal(null)}>Close</button>
           </div>
