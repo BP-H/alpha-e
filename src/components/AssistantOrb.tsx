@@ -6,7 +6,7 @@ import { askLLM } from "../lib/assistant";
 import type { AssistantMessage, Post } from "../types";
 import RadialMenu from "./RadialMenu";
 import { HOLD_MS } from "./orbConstants";
-import { motion, useReducedMotion } from "framer-motion";
+import "./orbs.css";
 
 /**
  * Assistant Orb — circular quick menu + 60fps drag + voice.
@@ -122,7 +122,8 @@ export default function AssistantOrb() {
   const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false); // radial
   const [petal, setPetal] = useState<null | "comment" | "remix" | "share">(null);
-  const reduceMotion = useReducedMotion();
+  const [hovering, setHovering] = useState(false);
+  const [pressing, setPressing] = useState(false);
 
   // gestures
   const movedRef = useRef(false);
@@ -300,7 +301,8 @@ export default function AssistantOrb() {
   // move & anchors
   function applyTransform(x: number, y: number) {
     const el = orbRef.current; if (!el) return;
-    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    el.style.setProperty("--x", `${x}px`);
+    el.style.setProperty("--y", `${y}px`);
   }
 
   function updateAnchors() {
@@ -362,6 +364,7 @@ export default function AssistantOrb() {
     preventTapRef.current = false;
     setDragging(true);
     setMenuOpen(false);
+    setPressing(true);
 
     el.style.pointerEvents = "none";
 
@@ -433,6 +436,7 @@ export default function AssistantOrb() {
 
     setHover(null);
     setDragging(false);
+    setPressing(false);
     movedRef.current = false;
     suppressClickRef.current = false;
 
@@ -536,31 +540,9 @@ export default function AssistantOrb() {
     @keyframes panelIn { from { opacity: 0; transform: scale(.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   `;
   const orbStyle: React.CSSProperties = {
-    position: "fixed",
-    left: 0, top: 0,
-    width: ORB_SIZE, height: ORB_SIZE,
-    borderRadius: 999,
-    zIndex: 9999,
-    display: "grid", placeItems: "center",
-    userSelect: "none", touchAction: "none",
-    border: "1px solid rgba(255,255,255,.12)",
-    background: "radial-gradient(120% 120% at 30% 30%, #fff, #ffc6f3 60%, #ff74de)",
-    boxShadow: mic
-      ? "0 18px 44px rgba(255,116,222,0.24), 0 0 0 12px rgba(255,116,222,0.12)"
-      : "0 12px 30px rgba(0,0,0,.35)",
-    willChange: "transform",
-    transition: dragging ? "none" : "box-shadow .2s ease, filter .2s ease",
-    cursor: dragging ? "grabbing" : "grab",
-    transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
-  };
-  const coreStyle: React.CSSProperties = {
-    width: 56, height: 56, borderRadius: 999,
-    background: "radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.95), rgba(255,255,255,.28) 65%, transparent 70%)",
-    pointerEvents: "none",
-  };
-  const ringStyle: React.CSSProperties = {
-    position: "absolute", inset: -6, borderRadius: 999, pointerEvents: "none",
-  };
+    "--x": `${pos.x}px`,
+    "--y": `${pos.y}px`,
+  } as React.CSSProperties;
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
     inset: 0,
@@ -588,6 +570,16 @@ export default function AssistantOrb() {
     backdropFilter: "blur(10px) saturate(140%)",
     animation: "panelIn .2s ease-out",
   };
+
+  const orbClass = [
+    "orb",
+    "orb--assistant",
+    menuOpen ? "is-open" : "",
+    mic ? "is-mic" : "",
+    dragging ? "is-dragging" : "",
+    hovering ? "is-hover" : "",
+    pressing ? "is-press" : "",
+  ].filter(Boolean).join(" ");
 
   function handleOrbKeyDown(e: React.KeyboardEvent) {
     const k = e.key.toLowerCase();
@@ -621,6 +613,7 @@ export default function AssistantOrb() {
 
       <button
         ref={orbRef}
+        className={orbClass}
         aria-label="Assistant orb"
         title="Tap for quick menu • Hold/drag to talk • Double‑click to talk"
         style={orbStyle}
@@ -634,19 +627,11 @@ export default function AssistantOrb() {
         onClick={onClick}
         onDoubleClick={onDoubleClick}
         onKeyDown={handleOrbKeyDown}
+        onPointerEnter={() => setHovering(true)}
+        onPointerLeave={() => { setHovering(false); setPressing(false); }}
       >
-        <motion.div
-          style={{ position: "relative", width: "100%", height: "100%" }}
-          animate={{ scale: reduceMotion ? 1 : menuOpen || mic ? 1.1 : 1 }}
-          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 20 }}
-        >
-          <div style={coreStyle} />
-          <motion.div
-            style={ringStyle}
-            animate={{ boxShadow: mic ? "0 0 0 10px rgba(255,116,222,.16)" : "inset 0 0 24px rgba(255,255,255,.55)" }}
-            transition={{ duration: reduceMotion ? 0 : 0.25 }}
-          />
-        </motion.div>
+        <div className="orb__core" />
+        <div className="orb__ring" />
       </button>
 
       {/* Radial menu */}

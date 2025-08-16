@@ -1,43 +1,44 @@
-import React from "react";
+import React, { useState } from "react";
 import bus from "../lib/bus";
+import "./orbs.css";
 
 export default function MenuOrb() {
+  const [hover, setHover] = useState(false);
+  const [press, setPress] = useState(false);
+
   function toggleSidebar() {
     bus.emit("sidebar:toggle");
   }
 
+  const cls = [
+    "orb",
+    "orb--menu",
+    hover ? "is-hover" : "",
+    press ? "is-press" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <>
-      <div
-        className="menu-orb"
-        role="button"
-        tabIndex={0}
-        aria-label="Toggle sidebar"
-        onClick={toggleSidebar}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggleSidebar();
-          }
-        }}
-      >
-        <div className="orb-core" />
-      </div>
-      <style>{`
-        .menu-orb{
-          position:fixed;left:16px;top:16px;z-index:60;
-          width:64px;height:64px;cursor:pointer;
+    <div
+      className={cls}
+      role="button"
+      tabIndex={0}
+      aria-label="Toggle sidebar"
+      style={{ "--x": "16px", "--y": "16px" } as React.CSSProperties}
+      onClick={toggleSidebar}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleSidebar();
         }
-        .menu-orb .orb-core{
-          width:100%;height:100%;border-radius:50%;
-          border:1px solid var(--stroke-2);
-          background:
-            radial-gradient(60% 60% at 40% 35%, rgba(255,255,255,.9), rgba(255,255,255,.2) 65%, transparent 70%),
-            radial-gradient(80% 80% at 70% 70%, rgba(10,132,255,.8), rgba(10,132,255,.2) 70%, transparent 72%),
-            radial-gradient(120% 120% at 50% 50%, rgba(10,132,255,.2), transparent 60%);
-          box-shadow:0 0 0 1px rgba(255,255,255,.06) inset, 0 8px 40px color-mix(in srgb, var(--blue) 35%, transparent);
-        }
-      `}</style>
-    </>
+      }}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => { setHover(false); setPress(false); }}
+      onPointerDown={() => setPress(true)}
+      onPointerUp={() => setPress(false)}
+      onPointerCancel={() => setPress(false)}
+    >
+      <div className="orb__core" />
+      <div className="orb__ring" />
+    </div>
   );
 }
