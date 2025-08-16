@@ -50,11 +50,3 @@ export type RemixSpec = {
   src?: string;
   params?: Record<string, unknown>;
 };
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "model-viewer": any;
-    }
-  }
-}
