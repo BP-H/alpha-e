@@ -272,6 +272,27 @@ export default function AssistantOrb() {
     push(resp);
   }
 
+  function handleEmojiClick(emoji: string) {
+    const post = ctxPost;
+    if (post) {
+      bus.emit?.("post:react", { id: post.id, emoji });
+      push({
+        id: uuid(),
+        role: "assistant",
+        text: `✨ Reacted ${emoji} on ${post.id}`,
+        ts: Date.now(),
+        postId: post.id,
+      });
+    } else {
+      push({
+        id: uuid(),
+        role: "assistant",
+        text: "⚠️ Drag the orb over a post first.",
+        ts: Date.now(),
+      });
+    }
+  }
+
   // hover highlight
   function setHover(id: string | null) {
     if (hoverIdRef.current) {
