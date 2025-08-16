@@ -34,6 +34,15 @@ function getKey(name: string) {
   return undefined;
 }
 
+const warnedProviders = new Set<string>();
+function warnMissingKey(name: string) {
+  const upper = name.toUpperCase();
+  if (!warnedProviders.has(upper)) {
+    warnedProviders.add(upper);
+    console.warn(`VITE_${upper}_KEY is not set; falling back to placeholder images`);
+  }
+}
+
 /** PICSUM — no key needed */
 async function fetchPicsum(page: number, perPage: number): Promise<FeedImage[]> {
   const url = `https://picsum.photos/v2/list?page=${page}&limit=${perPage}`;
@@ -62,7 +71,10 @@ async function fetchPicsum(page: number, perPage: number): Promise<FeedImage[]> 
 /** UNSPLASH (optional) — needs access key (store as localStorage.sn.keys.unsplash) */
 async function fetchUnsplash(page: number, perPage: number, query?: string): Promise<FeedImage[]> {
   const key = getKey("unsplash");
-  if (!key) return []; // fall back to picsum in caller when empty
+  if (!key) {
+    warnMissingKey("unsplash");
+    return []; // fall back to picsum in caller when empty
+  }
   const base = query ? "https://api.unsplash.com/search/photos" : "https://api.unsplash.com/photos";
   const params = new URLSearchParams({
     page: String(page),
@@ -92,7 +104,10 @@ async function fetchUnsplash(page: number, perPage: number, query?: string): Pro
 /** PEXELS (optional) — needs key (store as localStorage.sn.keys.pexels) */
 async function fetchPexels(page: number, perPage: number, query?: string): Promise<FeedImage[]> {
   const key = getKey("pexels");
-  if (!key) return [];
+  if (!key) {
+    warnMissingKey("pexels");
+    return [];
+  }
   const base = query ? "https://api.pexels.com/v1/search" : "https://api.pexels.com/v1/curated";
   const params = new URLSearchParams({
     page: String(page),
