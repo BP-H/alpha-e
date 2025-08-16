@@ -113,7 +113,7 @@ export default function PostCard({ post }: { post: Post }) {
           {pdf ? (
             <iframe className="pc-media" src={pdf} title="PDF" onLoad={onMediaReady} />
           ) : model3d ? (
-            <model-viewer className="pc-media" src={model3d} camera-controls onLoad={onMediaReady as any} />
+            <model-viewer className="pc-media" src={model3d} camera-controls onLoad={onMediaReady} />
           ) : video ? (
             <video
               className="pc-media"

@@ -114,7 +114,7 @@ export default function PostCard({ post }: { post: Post }) {
             <model-viewer
               src={model3d}
               camera-controls
-              onLoad={onMediaReady as any}
+              onLoad={onMediaReady}
               style={{ opacity: 0 }}
             />
           ) : video ? (
