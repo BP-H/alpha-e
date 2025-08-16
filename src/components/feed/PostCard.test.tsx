@@ -21,3 +21,12 @@ describe("PostCard image grid", () => {
   });
 });
 
+describe("PostCard voting", () => {
+  it("updates count on vote", () => {
+    const post: Post = { id: 2, author: "@user", poll: { options: ["A", "B"], votes: [0, 0] } };
+    const { getByText } = render(<PostCard post={post} />);
+    fireEvent.click(getByText("A"));
+    expect(getByText("A (1)")).toBeTruthy();
+  });
+});
+

@@ -21,6 +21,9 @@ export default function PostCard({ post }: { post: Post }) {
   const [reactOpen, setReactOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [remixOpen, setRemixOpen] = useState(false);
+  const [voteCounts, setVoteCounts] = useState<number[]>(
+    () => post.poll?.votes?.slice() || Array(post.poll?.options?.length || 0).fill(0),
+  );
   const reactionCounts = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of reactions) m.set(r, (m.get(r) || 0) + 1);
@@ -38,10 +41,22 @@ export default function PostCard({ post }: { post: Post }) {
       if (String(id) !== String(post.id)) return;
       setComments((s) => [body, ...s]);
     });
-    return () => { try { off1?.(); off2?.(); } catch {} };
+    const off3 = bus.on?.("post:vote", ({ id, optionIndex }) => {
+      if (String(id) !== String(post.id)) return;
+      setVoteCounts((s) => {
+        const next = [...s];
+        next[optionIndex] = (next[optionIndex] || 0) + 1;
+        return next;
+      });
+    });
+    return () => { try { off1?.(); off2?.(); off3?.(); } catch {} };
   }, [post.id]);
 
   useEffect(() => { if (commentOpen) cmtRef.current?.focus(); }, [commentOpen]);
+
+  useEffect(() => {
+    setVoteCounts(post.poll?.votes?.slice() || Array(post.poll?.options?.length || 0).fill(0));
+  }, [post.id, post.poll?.votes, post.poll?.options?.length]);
 
   // media picking
   const pdf     = (post as any)?.pdf as string | undefined;
@@ -157,6 +172,20 @@ export default function PostCard({ post }: { post: Post }) {
             <AmbientWorld />
           )}
         </div>
+
+        {post.poll?.options && post.poll.options.length > 0 && (
+          <div className="pc-poll">
+            {post.poll.options.map((opt, i) => (
+              <button
+                key={i}
+                className="pc-poll-opt"
+                onClick={() => bus.emit?.("post:vote", { id: post.id, optionIndex: i })}
+              >
+                {opt} {voteCounts[i] ? `(${voteCounts[i]})` : ""}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Footer (bottom of the same glass) */}
         <footer className="pc-foot">
