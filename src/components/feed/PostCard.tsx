@@ -49,12 +49,10 @@ export default function PostCard({ post }: { post: Post }) {
       if (String(id) !== String(post.id)) return;
       setComments((s) => [body, ...s]);
     });
-    const off3 = bus.on?.("post:vote", ({ id, option }) => {
+    const off3 = bus.on?.("post:vote", ({ id, optionIndex }) => {
       if (String(id) !== String(post.id)) return;
       setPollOpts((opts) =>
-        opts.map((o) =>
-          String(o.id) === String(option) ? { ...o, votes: o.votes + 1 } : o,
-        ),
+        opts.map((o, i) => (i === Number(optionIndex) ? { ...o, votes: o.votes + 1 } : o)),
       );
     });
     return () => {
@@ -116,10 +114,10 @@ export default function PostCard({ post }: { post: Post }) {
     try { await navigator.clipboard.writeText(url); } catch {}
   }
 
-  const handleVote = (optId: string) => {
+  const handleVote = (optId: string, index: number) => {
     if (voted) return;
     setVoted(optId);
-    bus.emit?.("post:vote", { id: post.id, option: optId });
+    bus.emit?.("post:vote", { id: post.id, optionIndex: index });
   };
 
   const totalVotes = pollOpts.reduce((sum, o) => sum + o.votes, 0);
@@ -206,11 +204,11 @@ export default function PostCard({ post }: { post: Post }) {
         {pollOpts.length > 0 && (
           <div className="pc-poll">
             {!voted
-              ? pollOpts.map((o) => (
+              ? pollOpts.map((o, i) => (
                   <button
                     key={o.id}
                     className="pc-poll-option"
-                    onClick={() => handleVote(o.id)}
+                    onClick={() => handleVote(o.id, i)}
                   >
                     {o.text}
                   </button>
