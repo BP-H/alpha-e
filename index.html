@@ -9,21 +9,25 @@
     <meta name="theme-color" content="#0b0d12">
     <title>superNova portal</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  </head>
-  <body>
-    <div id="root"></div>
+
     <script>
+      // Early bootstrap fallback + global error hooks
       (function () {
-        function showFallback() {
+        function showFallback(message) {
           if (document.getElementById('bootstrap-error')) return;
           const el = document.createElement('p');
           el.id = 'bootstrap-error';
-          el.textContent = 'An unexpected error occurred while loading the app.';
+          el.textContent =
+            message || 'An unexpected error occurred while loading the app.';
           el.style.cssText =
             'position:fixed;inset:16px;z-index:99999;padding:12px;border-radius:8px;' +
-            'background:rgba(0,0,0,0.85);color:#fff;font:14px/1.4 sans-serif;';
+            'background:rgba(0,0,0,0.85);color:#fff;font:14px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;';
           document.body.appendChild(el);
         }
+        // Expose for module-load errors
+        window.__bootFail = function () {
+          showFallback('Failed to load the application. Please try again later.');
+        };
         window.onerror = function (_message, _source, _lineno, _colno, error) {
           console.error('Uncaught error:', error);
           showFallback();
@@ -34,6 +38,32 @@
         };
       })();
     </script>
-    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script
+      type="module"
+      src="/src/main.tsx"
+      id="main-module"
+      onerror="window.__bootFail && window.__bootFail()"
+    ></script>
+    <script>
+      // Also listen via addEventListener to cover all browsers
+      (function () {
+        const mainModule = document.getElementById('main-module');
+        if (mainModule) {
+          mainModule.addEventListener('error', () => {
+            window.__bootFail && window.__bootFail();
+          });
+        }
+      })();
+    </script>
+
+    <noscript>
+      <p style="position:fixed;inset:16px;z-index:99999;padding:12px;border-radius:8px;background:#000;color:#fff;font:14px/1.4 sans-serif;">
+        JavaScript is disabled. Please enable it to use this app.
+      </p>
+    </noscript>
   </body>
 </html>
