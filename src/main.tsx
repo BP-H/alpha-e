@@ -14,7 +14,7 @@ if (!root) {
 } else {
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/*" element={<App />} />
         </Routes>
