@@ -106,4 +106,25 @@
 .pc-addcmt{ display:flex; gap:8px; margin-top:10px; }
 .pc-addcmt input{ flex:1; height:36px; padding:0 10px; border-radius:10px; outline:none; background: rgba(16,18,28,.65); border:1px solid rgba(255,255,255,.16); color:#fff; font-size:16px; }
 .pc-addcmt button{ height:36px; padding:0 12px; border-radius:10px; cursor:pointer; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color:#fff; }
+.pc-remix-box{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:8px 10px;
+  border-radius: var(--pc-radius);
+  background: var(--pc-frost-2);
+  border:1px solid var(--pc-stroke);
+  color: var(--pc-text);
+}
+.pc-remix-box button{
+  align-self:flex-end;
+  height:36px;
+  padding:0 12px;
+  border-radius:10px;
+  cursor:pointer;
+  background: rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.16);
+  color:#fff;
+}
 .pc-empty{ opacity:.7; }

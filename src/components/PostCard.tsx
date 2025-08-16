@@ -18,6 +18,7 @@ export default function PostCard({ post }: { post: Post }) {
   const [drawer, setDrawer] = useState(false);
   const [comments, setComments] = useState<string[]>([]);
   const [reactions, setReactions] = useState<string[]>([]);
+  const [remixOpen, setRemixOpen] = useState(false);
 
   useEffect(() => {
     const off1 = bus.on?.("post:comment", ({ id, body }) => {
@@ -173,7 +174,7 @@ export default function PostCard({ post }: { post: Post }) {
                       fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <button className="pc-act" aria-label="Remix" title="Remix" onClick={() => bus.emit?.("post:remix", { id: post.id })}>
+            <button className="pc-act" aria-label="Remix" title="Remix" onClick={() => setRemixOpen((s) => !s)}>
               <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 4h8l2 3h6v13H4zM7 10h10M7 14h10"
                       fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
@@ -202,6 +203,13 @@ export default function PostCard({ post }: { post: Post }) {
           )}
         </div>
       </div>
+
+      {remixOpen && (
+        <div className="pc-remix-box" role="region" aria-label="Remix controls">
+          <div className="pc-empty">Remix area</div>
+          <button onClick={() => setRemixOpen(false)}>Close</button>
+        </div>
+      )}
 
       <div className="pc-drawer">
         <div className="pc-drawer-inner">
