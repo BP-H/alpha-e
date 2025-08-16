@@ -1,7 +1,7 @@
 /* Feed layout scoped to component */
 
 .content-viewport {
-  height: 100dvh;
+  height: 100%;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain; /* avoid page rubber-band */

@@ -6,7 +6,12 @@
   --glass: rgba(255,255,255,.6);
 }
 
-html, body, #root { height: 100%; }
+html, body, #root, main { height: 100%; }
+html, body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
 body { background: var(--bg); color: var(--ink); }
 
 .layout{
