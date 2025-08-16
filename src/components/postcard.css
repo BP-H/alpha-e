@@ -114,3 +114,52 @@
 .pc-addcmt input{ flex:1; height:var(--pc-btn-height); padding:0 10px; border-radius:10px; outline:none; background: rgba(16,18,28,.65); border:1px solid rgba(255,255,255,.16); color:#fff; font-size:16px; max-width:100%; box-sizing:border-box; }
 .pc-addcmt button{ height:var(--pc-btn-height); padding:0 12px; border-radius:10px; cursor:pointer; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color:#fff; max-width:100%; box-sizing:border-box; }
 .pc-empty{ opacity:.7; }
+
+/* poll layout */
+.pc-poll{
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.pc-poll-option{
+  padding:6px 10px;
+  border-radius:var(--pc-radius);
+  border:1px solid var(--pc-stroke);
+  background:rgba(255,255,255,.06);
+  color:var(--pc-text);
+  text-align:left;
+  cursor:pointer;
+}
+.pc-poll-option:hover{
+  border-color:rgba(106,115,255,.55);
+}
+.pc-poll-result{
+  position:relative;
+  padding:6px 10px;
+  border-radius:var(--pc-radius);
+  border:1px solid var(--pc-stroke);
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+  color:var(--pc-text);
+}
+.pc-poll-result.voted{
+  border-color:rgba(106,115,255,.55);
+}
+.pc-poll-bar{
+  position:absolute;
+  top:0; left:0; bottom:0;
+  background:rgba(255,255,255,.12);
+}
+.pc-poll-label{
+  position:relative;
+  z-index:1;
+}
+.pc-poll-count{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:12px;
+  z-index:1;
+}

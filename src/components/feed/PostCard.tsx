@@ -21,6 +21,17 @@ export default function PostCard({ post }: { post: Post }) {
   const [reactOpen, setReactOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [remixOpen, setRemixOpen] = useState(false);
+  const [pollOpts, setPollOpts] = useState<{ id: string; text: string; votes: number }[]>(
+    () => {
+      const p = (post as any)?.poll?.options || [];
+      return p.map((o: any, i: number) => ({
+        id: String(o.id ?? i),
+        text: String(o.text ?? o),
+        votes: Number(o.votes) || 0,
+      }));
+    },
+  );
+  const [voted, setVoted] = useState<string | null>(null);
   const reactionCounts = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of reactions) m.set(r, (m.get(r) || 0) + 1);
@@ -38,7 +49,33 @@ export default function PostCard({ post }: { post: Post }) {
       if (String(id) !== String(post.id)) return;
       setComments((s) => [body, ...s]);
     });
-    return () => { try { off1?.(); off2?.(); } catch {} };
+    const off3 = bus.on?.("post:vote", ({ id, option }) => {
+      if (String(id) !== String(post.id)) return;
+      setPollOpts((opts) =>
+        opts.map((o) =>
+          String(o.id) === String(option) ? { ...o, votes: o.votes + 1 } : o,
+        ),
+      );
+    });
+    return () => {
+      try {
+        off1?.();
+        off2?.();
+        off3?.();
+      } catch {}
+    };
+  }, [post.id]);
+
+  useEffect(() => {
+    const p = (post as any)?.poll?.options || [];
+    setPollOpts(
+      p.map((o: any, i: number) => ({
+        id: String(o.id ?? i),
+        text: String(o.text ?? o),
+        votes: Number(o.votes) || 0,
+      })),
+    );
+    setVoted(null);
   }, [post.id]);
 
   useEffect(() => { if (commentOpen) cmtRef.current?.focus(); }, [commentOpen]);
@@ -78,6 +115,14 @@ export default function PostCard({ post }: { post: Post }) {
     const url = `${location.origin}${location.pathname}#post-${post.id}`;
     try { await navigator.clipboard.writeText(url); } catch {}
   }
+
+  const handleVote = (optId: string) => {
+    if (voted) return;
+    setVoted(optId);
+    bus.emit?.("post:vote", { id: post.id, option: optId });
+  };
+
+  const totalVotes = pollOpts.reduce((sum, o) => sum + o.votes, 0);
 
   return (
     <article className="pc" data-post-id={String(post.id)} id={`post-${post.id}`}>
@@ -157,6 +202,43 @@ export default function PostCard({ post }: { post: Post }) {
             <AmbientWorld />
           )}
         </div>
+
+        {pollOpts.length > 0 && (
+          <div className="pc-poll">
+            {!voted
+              ? pollOpts.map((o) => (
+                  <button
+                    key={o.id}
+                    className="pc-poll-option"
+                    onClick={() => handleVote(o.id)}
+                  >
+                    {o.text}
+                  </button>
+                ))
+              : pollOpts.map((o) => {
+                  const pct = totalVotes
+                    ? Math.round((o.votes / totalVotes) * 100)
+                    : 0;
+                  return (
+                    <div
+                      key={o.id}
+                      className={`pc-poll-result${
+                        o.id === voted ? " voted" : ""
+                      }`}
+                    >
+                      <div
+                        className="pc-poll-bar"
+                        style={{ width: `${pct}%` }}
+                      />
+                      <span className="pc-poll-label">{o.text}</span>
+                      <span className="pc-poll-count">
+                        {o.votes} · {pct}%
+                      </span>
+                    </div>
+                  );
+                })}
+          </div>
+        )}
 
         {/* Footer (bottom of the same glass) */}
         <footer className="pc-foot">
