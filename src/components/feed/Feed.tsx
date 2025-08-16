@@ -11,10 +11,19 @@ const PRELOAD_PX = 800;
 
 export default function Feed() {
   const posts = useFeedStore((s) => s.posts);
+  const setPosts = useFeedStore((s) => s.setPosts);
   const [limit, setLimit] = useState(PAGE);
   const limitRef = useRef(limit);
   const visible = useMemo(() => posts.slice(0, limit), [posts, limit]);
   const ref = useRef<HTMLDivElement | null>(null);
+
+  // hydrate posts from global injection if available
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const injected = (window as any).__SN_POSTS__ as Post[] | undefined;
+      if (Array.isArray(injected) && injected.length) setPosts(injected);
+    }
+  }, [setPosts]);
 
   useEffect(() => {
     limitRef.current = limit;
