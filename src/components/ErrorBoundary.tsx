@@ -33,7 +33,10 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.hasError) {
-      if (this.props.fallback) return this.props.fallback;
+      // Allow valid falsy ReactNodes (0, empty string) to be used as fallback
+      if (this.props.fallback !== undefined && this.props.fallback !== null) {
+        return this.props.fallback;
+      }
 
       const msg =
         this.state.error?.message ?? "An unexpected error occurred.";
