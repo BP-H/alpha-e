@@ -6,9 +6,9 @@ export default function BrandBadge({ onEnterUniverse }: { onEnterUniverse: () =>
 
   return (
     <>
-      <div className="brand-wrap">
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button
-          className="brand-dot"
+          className="topbar-orb"
           aria-label="Toggle brand menu"
           onClick={() => setOpen(o => !o)}
           onDoubleClick={() => bus.emit("sidebar:toggle", undefined)} /* bus.emit expects (event, payload) */
@@ -23,11 +23,11 @@ export default function BrandBadge({ onEnterUniverse }: { onEnterUniverse: () =>
             onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.display='none'; }}
           />
         </button>
-        <div className="brand-label">superNova2177</div>
+        <div className="topbar-orb-text">superNova2177</div>
       </div>
 
       {open && (
-        <div className="brand-menu">
+        <div>
           <button onClick={() => bus.emit("chat:add", { role:"system", text:"Command palette (stub)" })}>
             <svg className="ico" viewBox="0 0 24 24"><path d="M5 12h14M5 7h10M5 17h7" stroke="currentColor" strokeWidth="2" fill="none"/></svg>
             <span>Command</span>

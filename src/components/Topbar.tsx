@@ -8,7 +8,7 @@ export default function Topbar() {
   const [theme, setTheme] = useTheme();
 
   const handleEnterUniverse = () => {
-    const el = document.querySelector(".brand-dot") as HTMLElement | null;
+    const el = document.querySelector(".topbar-orb") as HTMLElement | null;
     if (!el) return;
     const r = el.getBoundingClientRect();
     bus.emit("orb:portal", { x: r.left + r.width / 2, y: r.top + r.height / 2 });
