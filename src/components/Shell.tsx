@@ -9,13 +9,25 @@ import Sidebar from "./Sidebar";
 import PortalOverlay from "./PortalOverlay";
 import PostComposer from "./PostComposer";
 import AvatarPortal from "./AvatarPortal";
+import BackgroundVoid from "../three/BackgroundVoid";
+import ThirteenthFloorWorld from "../three/ThirteenthFloorWorld";
+import useLocal from "../hooks/useLocal";
 
 export default function Shell() {
+  const [worldMode] = useLocal<"orbs" | "void" | "floor">("sn.world.mode", "orbs");
+  const world =
+    worldMode === "floor" ? (
+      <ThirteenthFloorWorld />
+    ) : worldMode === "void" ? (
+      <BackgroundVoid />
+    ) : (
+      <World3D />
+    );
   return (
     <>
       {/* 3D world behind everything */}
       <div className="world-layer" aria-hidden>
-        <World3D />
+        {world}
       </div>
       <MenuOrb />
       <Sidebar />

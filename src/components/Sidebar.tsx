@@ -3,25 +3,8 @@ import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import bus from "../lib/bus";
 import { useTheme } from "../lib/useTheme";
+import useLocal from "../hooks/useLocal";
 
-function useLocal<T>(key: string, init: T) {
-  const [v, setV] = useState<T>(() => {
-    if (typeof window === "undefined") return init;
-    try {
-      const raw = window.localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : init;
-    } catch {
-      return init;
-    }
-  });
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(key, JSON.stringify(v));
-    } catch {}
-  }, [key, v]);
-  return [v, setV] as const;
-}
 
 export default function Sidebar() {
   const [open, setOpen] = useLocal("sn.sidebar.open", false);
@@ -58,7 +41,7 @@ export default function Sidebar() {
 
   const [theme, setTheme] = useTheme();
   const [accent, setAccent] = useLocal("sn.accent", "#7c83ff");
-  const [worldMode, setWorldMode] = useLocal<"orbs" | "matrix">(
+  const [worldMode, setWorldMode] = useLocal<"orbs" | "void" | "floor">(
     "sn.world.mode",
     "orbs"
   );
@@ -259,19 +242,28 @@ export default function Sidebar() {
               </div>
             </div>
 
-            <div className="grid two">
-              <div>
-                <label className="label">Background</label>
-                <select
-                  className="input"
-                  value={worldMode}
-                  onChange={(e) => setWorldMode(e.target.value as any)}
-                >
-                  <option value="orbs">Orb Mesh</option>
-                  <option value="matrix">Matrix Drift</option>
-                </select>
+            <div>
+              <label className="label">Background</label>
+              <div className="world-select">
+                {[
+                  { id: "orbs", label: "🔮" },
+                  { id: "void", label: "🌌" },
+                  { id: "floor", label: "🏢" },
+                ].map((w) => (
+                  <button
+                    key={w.id}
+                    type="button"
+                    className={`world-option ${worldMode === w.id ? "on" : ""}`}
+                    onClick={() => setWorldMode(w.id as any)}
+                    aria-label={w.id}
+                  >
+                    {w.label}
+                  </button>
+                ))}
               </div>
-              <div>
+            </div>
+            {worldMode === "orbs" && (
+              <div className="orb-slider">
                 <label className="label">Orb density</label>
                 <input
                   className="input"
@@ -283,8 +275,8 @@ export default function Sidebar() {
                   onChange={(e) => setOrbCount(parseInt(e.target.value, 10))}
                 />
               </div>
-            </div>
-            <p className="hint">Changes apply instantly and persist on this device.</p>
+            )}
+              <p className="hint">Changes apply instantly and persist on this device.</p>
           </section>
 
           <section className="card">
