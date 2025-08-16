@@ -3,6 +3,7 @@ import "./postcard.css";
 import type { Post } from "../../types";
 import bus from "../../lib/bus";
 import { ensureModelViewer } from "../../lib/ensureModelViewer";
+import AmbientWorld from "../AmbientWorld";
 
 const OR = (a: any, b: any) => (a ?? b);
 
@@ -60,7 +61,6 @@ export default function PostCard({ post }: { post: Post }) {
       if (typeof img === "string") out.push(img);
       else if (img.url) out.push(String(img.url));
     }
-    if (!out.length && !video && !pdf && !model3d) out.push("/vite.svg");
     return out;
   }, [post, video, pdf, model3d]);
 
@@ -142,7 +142,7 @@ export default function PostCard({ post }: { post: Post }) {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : images.length ? (
             <img
               src={images[0]}
               alt={post?.title || post?.author || "image"}
@@ -152,6 +152,8 @@ export default function PostCard({ post }: { post: Post }) {
               onLoad={onMediaReady}
               style={{ opacity: 0 }}
             />
+          ) : (
+            <AmbientWorld />
           )}
         </div>
 

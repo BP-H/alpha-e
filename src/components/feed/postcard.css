@@ -68,7 +68,8 @@
 .pc-media img,
 .pc-media video,
 .pc-media iframe,
-.pc-media model-viewer{
+.pc-media model-viewer,
+.pc-media canvas{
   display:block; width:100%; height:auto;
   background:#0b0d12;
   opacity:0; transition:opacity .25s ease;
