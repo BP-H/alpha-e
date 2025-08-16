@@ -33,7 +33,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
   /* Theme accents */
   --pink: #ff74de;   /* Assistant orb theme */
-  --blue: #4f7afe;   /* Brand/top-left orb theme */
+  --blue: #0a84ff;   /* Brand/top-left orb theme */
   --orb-color: var(--pink);
   --orb-surface: color-mix(in srgb, #fff 65%, var(--orb-color) 35%);
   --orb-shadow: 0 12px 30px rgba(0,0,0,.35);
