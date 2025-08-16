@@ -9,7 +9,12 @@ import "./Feed.css";
 const PAGE = 9;
 const PRELOAD_PX = 800;
 
-export default function Feed() {
+interface FeedProps {
+  children?: React.ReactNode;
+  style?: React.CSSProperties;
+}
+
+export default function Feed({ children, style }: FeedProps) {
   const posts = useFeedStore((s) => s.posts);
   const setPosts = useFeedStore((s) => s.setPosts);
   const [limit, setLimit] = useState(PAGE);
@@ -70,9 +75,10 @@ export default function Feed() {
   }, [posts]);
 
   return (
-    <div ref={ref} className="content-viewport">
+    <div ref={ref} className="content-viewport" style={style}>
       <div className="feed-wrap">
         <div className="feed-content">
+          {children}
           {visible.length ? (
             visible.map((p) => <PostCard key={String(p.id)} post={p} />)
           ) : (
