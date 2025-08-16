@@ -108,9 +108,12 @@ export default function AssistantOrb() {
 
   // feed context
   useEffect(() => {
-    const a = bus.on?.("feed:hover", (p: { post: Post }) => setCtxPost(p.post));
-    const b = bus.on?.("feed:select", (p: { post: Post }) => setCtxPost(p.post));
-    return () => { try { a?.(); } catch {}; try { b?.(); } catch {}; };
+    const offHover = bus.on?.("feed:hover", (p: { post: Post }) => setCtxPost(p.post));
+    const offSelect = bus.on?.("feed:select", (p: { post: Post }) => setCtxPost(p.post));
+    return () => {
+      offHover?.();
+      offSelect?.();
+    };
   }, []);
 
   // speech
