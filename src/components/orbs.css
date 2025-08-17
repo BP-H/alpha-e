@@ -80,7 +80,8 @@
   --orb-d: 56px;
   z-index: 60;
 }
-.orb--menu .orb__core::after {
+.orb--menu .orb__core::after,
+.orb--assistant .orb__core::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -98,7 +99,8 @@
   .orb__ring,
   .orb--assistant.is-mic .orb__core,
   .orb--assistant.is-mic .orb__ring,
-  .orb--menu .orb__core::after {
+  .orb--menu .orb__core::after,
+  .orb--assistant .orb__core::after {
     animation: none;
   }
 }
