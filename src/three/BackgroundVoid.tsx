@@ -35,9 +35,13 @@ export default function BackgroundVoid() {
     });
   }, []);
 
-  const bg = w.theme === "dark" ? "#0b0d12" : "#f6f8fb";
-  const fogC = w.theme === "dark" ? "#0b0d12" : "#f1f4fa";
-  const gridC = w.theme === "dark" ? "#283044" : "#e5eaf4";
+  // Hard-coded bright, minimal palette reminiscent of the Matrix architect room.
+  // Instead of switching between light/dark themes we always render a white scene
+  // with a very subtle grey floor grid.  Orbs keep their dynamic colour via
+  // world state so they remain vibrant against the stark background.
+  const bg = "#ffffff"; // pure white background
+  const fogC = "#ffffff"; // white fog to maintain the endless-room feel
+  const gridC = "#e5e5e5"; // light grey grid lines
   const fogNear = 12 + w.fogLevel * 6;
   const fogFar = 44 - w.fogLevel * 16;
 
@@ -48,14 +52,15 @@ export default function BackgroundVoid() {
       <Canvas dpr={[1, 2]} camera={{ position: [0, 0.2, 7], fov: 50 }}>
         <color attach="background" args={[bg]} />
         <fog attach="fog" args={[fogC, fogNear, fogFar]} />
-        <ambientLight intensity={1.0} />
-        <directionalLight position={[5, 8, 3]} intensity={0.65} />
+        {/* Slightly stronger lights to achieve a crisp, high-key look */}
+        <ambientLight intensity={1.2} />
+        <directionalLight position={[5, 8, 3]} intensity={0.85} />
         <FloorGrid color={gridC} opacity={w.gridOpacity} />
         <Instances limit={64}>
           <sphereGeometry args={[0.26, 32, 32]} />
           <meshStandardMaterial
             color={w.orbColor}
-            emissive={w.theme === "dark" ? "#6b72ff" : "#b6bcff"}
+            emissive="#b6bcff" // soft bluish glow for contrast on white
             emissiveIntensity={0.16}
             roughness={0.25}
             metalness={0.55}
